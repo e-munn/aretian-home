@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .a {
+        fill: #fff1e1;
+      }
+
+      .b {
+        fill: #cdf;
+      }
+
+      .c {
+        fill: #6d6d6d;
+      }
+
+      .d {s
+        fill: none;
+        stroke: #6d6d6d;
+        stroke-miterlimit: 10;
+      }
+    </style>
+  </defs>
+  <rect class="a" width="64" height="64" rx="5.25"/>
+  <g>
+    <g>
+      <rect class="b" x="4.1" y="14.77" width="55.8" height="34.78" rx="2.96"/>
+      <path class="c" d="M56.94,15.27a2.47,2.47,0,0,1,2.46,2.46V46.59a2.46,2.46,0,0,1-2.46,2.46H7.06A2.46,2.46,0,0,1,4.6,46.59V17.73a2.47,2.47,0,0,1,2.46-2.46H56.94m0-1H7.06A3.46,3.46,0,0,0,3.6,17.73V46.59a3.45,3.45,0,0,0,3.46,3.46H56.94a3.45,3.45,0,0,0,3.46-3.46V17.73a3.46,3.46,0,0,0-3.46-3.46Z"/>
+    </g>
+    <g>
+      <line class="d" x1="3.6" y1="21.48" x2="60.4" y2="21.48"/>
+      <circle class="c" cx="8.24" cy="18.1" r="1.27"/>
+      <circle class="c" cx="11.91" cy="18.1" r="1.27"/>
+      <circle class="c" cx="15.58" cy="18.1" r="1.27"/>
+    </g>
+  </g>
+</svg>
