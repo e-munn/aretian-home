@@ -30,11 +30,8 @@ export default function Header({}: {}) {
     <>
       <header className={`w-full h-36 flex flex-row items-center justify-center font-mono font-medium px-12 `}>
         <motion.div
-          initial={{ width: 0 }}
-          style={{ originX: 0 }}
-          animate={{ width: '100%' }}
-          exit={{ width: 0 }}
-          transition={{ ease: 'easeInOut', duration: 0.6, delay: 0.1 }}
+          initial={{ y: -140 }}
+          animate={{ y: 0 }}
           className='overflow-hidden pr-2 flex flex-row justify-between items-center  w-full max-w-7xl bg-slate-800 bg-opacity-60 backdrop-blur-lg rounded-full border-slate-900  shadow-lg'
         >
           <div className='flex flex-row items-center w-full overflow-hidden'>
@@ -58,7 +55,7 @@ export default function Header({}: {}) {
             </nav>
           </div>
           <div className='h-full p-2'>
-            <Button className='rounded-full p-6 h-full'>Contact</Button>
+            <Button className='rounded-full p-6 px-8 h-full'>Contact</Button>
           </div>
         </motion.div>
       </header>
