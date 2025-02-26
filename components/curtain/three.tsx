@@ -1,19 +1,19 @@
-'use client'
-import React, { useRef, useState, useEffect } from 'react'
+'use client';
+import React, { useRef, useState, useEffect } from 'react';
 
-import * as THREE from 'three'
+import * as THREE from 'three';
 
-import Stats from 'three/addons/libs/stats.module.js'
+import Stats from 'three/addons/libs/stats.module.js';
 
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
-import { BloomPass } from 'three/addons/postprocessing/BloomPass.js'
-import { FilmPass } from 'three/addons/postprocessing/FilmPass.js'
-import { FocusShader } from 'three/addons/shaders/FocusShader.js'
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js'
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
-import { Canvas, useThree, useFrame } from '@react-three/fiber'
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { BloomPass } from 'three/addons/postprocessing/BloomPass.js';
+import { FilmPass } from 'three/addons/postprocessing/FilmPass.js';
+import { FocusShader } from 'three/addons/shaders/FocusShader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import {
   useGLTF,
   useFBX,
@@ -24,24 +24,24 @@ import {
   OrbitControls,
   Outlines,
   Environment,
-} from '@react-three/drei'
-import _ from 'lodash'
-import { Button } from '../ui/button'
+} from '@react-three/drei';
+import _ from 'lodash';
+import { Button } from '../ui/button';
 
 const Model = (props: any) => {
   // const { nodes } = useGLTF('./block.glb')
-  const [hovered, hover] = useState(false)
-  const ref = useRef()
+  const [hovered, hover] = useState(false);
+  const ref = useRef();
 
-  const model = useGLTF('./untitled3.glb')
-  const { nodes, materials, animations } = model
-  const { actions, names } = useAnimations(animations, ref)
+  const model = useGLTF('./untitled3.glb');
+  const { nodes, materials, animations } = model;
+  const { actions, names } = useAnimations(animations, ref);
   useEffect(() => {
-    console.log(actions[names[0]]?.reset().fadeIn(0.1).play())
-    actions[names[0]]?.reset().fadeIn(0.1).play()
+    console.log(actions[names[0]]?.reset().fadeIn(0.1).play());
+    actions[names[0]]?.reset().fadeIn(0.1).play();
 
     // myMesh.current.rotation.x = Math.sin(clock.getElapsedTime()) * 0.1
-  }, [])
+  }, []);
 
   return (
     <mesh
@@ -60,8 +60,8 @@ const Model = (props: any) => {
       {/* <Edges linewidth={0.1} threshold={12} color={hovered ? '#FFF' : '#fff'} /> */}
       {/* <Outlines thickness={0.01} color={hovered ? '#c02040' : 'black'} /> */}
     </mesh>
-  )
-}
+  );
+};
 
 const Three: React.FC = () => {
   return (
@@ -75,6 +75,6 @@ const Three: React.FC = () => {
       <OrbitControls makeDefault enableZoom={false} />
       <Environment preset='city' />
     </Canvas>
-  )
-}
-export default Three
+  );
+};
+export default Three;

@@ -1,10 +1,14 @@
-'use client'
-import _ from 'lodash'
-import Link from 'next/link'
-import { Lock, InfoIcon, Hotel } from 'lucide-react'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { Button } from '@/components/ui/button'
-import { motion } from 'framer-motion'
+'use client';
+import _ from 'lodash';
+import Link from 'next/link';
+import { Lock, InfoIcon, Hotel } from 'lucide-react';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
+import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 
 // import { Logo } from '@/components/icons'
 export default function Header({}: {}) {
@@ -25,18 +29,25 @@ export default function Header({}: {}) {
       display: 'About',
       href: '/about',
     },
-  ]
+  ];
   return (
     <>
-      <header className={`w-full h-36 flex flex-row items-center justify-center font-mono font-medium px-12 `}>
+      <header
+        className={`w-full h-36 flex flex-row items-center justify-center font-mono font-medium px-12 `}
+      >
         <motion.div
           initial={{ y: -140 }}
           animate={{ y: 0 }}
-          className='overflow-hidden pr-2 flex flex-row justify-between items-center  w-full max-w-7xl bg-slate-800 bg-opacity-60 backdrop-blur-lg rounded-full border-slate-900  shadow-lg'
+          // className='overflow-hidden pr-2 flex flex-row justify-between items-center  w-full max-w-7xl bg-slate-800 bg-opacity-60 backdrop-blur-lg rounded-full border-slate-900  shadow-lg'
+          className='overflow-hidden pr-2 flex flex-row justify-between items-center w-full max-w-7xl rounded-full'
         >
           <div className='flex flex-row items-center w-full overflow-hidden'>
             <div className='h-full p-2'>
-              <Button variant={'ghost'} className='rounded-full p-8 h-full' asChild>
+              <Button
+                variant={'ghost'}
+                className='rounded-full p-8 h-full'
+                asChild
+              >
                 <Link href='/'>
                   <Hotel />
                 </Link>
@@ -60,5 +71,5 @@ export default function Header({}: {}) {
         </motion.div>
       </header>
     </>
-  )
+  );
 }
