@@ -1,75 +1,100 @@
 'use client';
-import _ from 'lodash';
-import Link from 'next/link';
-import { Lock, InfoIcon, Hotel } from 'lucide-react';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
 
-// import { Logo } from '@/components/icons'
-export default function Header({}: {}) {
-  const navItems = [
-    {
-      display: 'Home',
-      href: '/',
-    },
-    {
-      display: 'Projects',
-      href: '/projects',
-    },
-    {
-      display: 'Politon',
-      href: '/politon',
-    },
-    {
-      display: 'About',
-      href: '/about',
-    },
-  ];
+import { motion } from 'framer-motion';
+import AretianLogo from '@/components/AretianLogo';
+import { useCursorContext } from '@/components/cursor/CursorProvider';
+
+type Section = 'analytics' | 'design' | 'projects' | 'contact' | null;
+
+const navItems: { label: string; id: Section }[] = [
+  { label: 'Analytics', id: 'analytics' },
+  { label: 'Design', id: 'design' },
+  { label: 'Projects', id: 'projects' },
+  { label: 'Contact', id: 'contact' },
+];
+
+function NavItem({
+  label,
+  isActive,
+  isLocked,
+  darkMode,
+  onHover,
+  onLeave,
+  onClick,
+}: {
+  label: string;
+  isActive: boolean;
+  isLocked: boolean;
+  darkMode: boolean;
+  onHover: () => void;
+  onLeave: () => void;
+  onClick: () => void;
+}) {
+  const getTextColor = () => {
+    if (isLocked || isActive) {
+      return 'text-[#00C217]';
+    }
+    return 'text-white/70 hover:text-[#00C217]';
+  };
+
   return (
-    <>
-      <header
-        className={`w-full h-36 flex flex-row items-center justify-center font-mono font-medium px-12 `}
+    <motion.div
+      className="py-2 w-fit"
+      onMouseEnter={onHover}
+      onMouseLeave={onLeave}
+    >
+      <motion.button
+        className={`font-medium uppercase tracking-wide cursor-pointer bg-transparent border-none text-left px-2 py-1 transition-colors duration-300 ${getTextColor()}`}
+        style={{ fontSize: 'clamp(1rem, 2.5vw, 1.5rem)' }}
+        whileHover={{ x: 4 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
       >
-        <motion.div
-          initial={{ y: -140 }}
-          animate={{ y: 0 }}
-          // className='overflow-hidden pr-2 flex flex-row justify-between items-center  w-full max-w-7xl bg-slate-800 bg-opacity-60 backdrop-blur-lg rounded-full border-slate-900  shadow-lg'
-          className='overflow-hidden pr-2 flex flex-row justify-between items-center w-full max-w-7xl rounded-full'
-        >
-          <div className='flex flex-row items-center w-full overflow-hidden'>
-            <div className='h-full p-2'>
-              <Button
-                variant={'ghost'}
-                className='rounded-full p-8 h-full'
-                asChild
-              >
-                <Link href='/'>
-                  <Hotel />
-                </Link>
-              </Button>
-            </div>
-            <nav className='flex flex-row items-center p-6'>
-              <ul className='flex flex-row items-center gap-8'>
-                {navItems.map((item, index) => (
-                  <li key={index}>
-                    <Link href={item.href}>
-                      <div className=' hover:underline'>{item.display}</div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-          <div className='h-full p-2'>
-            <Button className='rounded-full p-6 px-8 h-full'>Contact</Button>
-          </div>
-        </motion.div>
-      </header>
-    </>
+        {label}
+      </motion.button>
+    </motion.div>
   );
 }
+
+interface HeaderProps {
+  activeSection: Section;
+  lockedSection: Section;
+  onHover: (section: Section) => void;
+  onLeave: () => void;
+  onClick: (section: Section) => void;
+}
+
+export default function Header({
+  activeSection,
+  lockedSection,
+  onHover,
+  onLeave,
+  onClick,
+}: HeaderProps) {
+  const isDarkMode = activeSection === 'design' || activeSection === 'projects';
+
+  return (
+    <div className="pl-12 md:pl-16 lg:pl-24 py-12 h-full">
+      <div className="relative z-20">
+        <AretianLogo darkMode={isDarkMode} />
+        <nav className="mt-6 flex flex-col gap-1">
+          {navItems.map((item) => (
+            <NavItem
+              key={item.id}
+              label={item.label}
+              isActive={activeSection === item.id}
+              isLocked={lockedSection === item.id}
+              darkMode={isDarkMode}
+              onHover={() => onHover(item.id)}
+              onLeave={onLeave}
+              onClick={() => onClick(item.id)}
+            />
+          ))}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+export { navItems };
+export type { Section };

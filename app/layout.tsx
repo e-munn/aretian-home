@@ -1,24 +1,24 @@
 import type { Metadata } from 'next'
-import { JetBrains_Mono, Merriweather } from 'next/font/google'
+import { Geo, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
-import Header from '@/components/head/header'
+import { CursorProvider } from '@/components/cursor/CursorProvider'
+import CursorWrapper from '@/components/cursor/CursorWrapper'
 
-const mono = JetBrains_Mono({
-  weight: ['400', '500', '600', '700', '800'],
+const geo = Geo({
+  weight: '400',
+  variable: '--font-geo',
   subsets: ['latin'],
-  variable: '--font-mono',
 })
 
-const serif = Merriweather({
-  weight: ['700'],
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-mono',
   subsets: ['latin'],
-  variable: '--font-serif',
 })
 
 export const metadata: Metadata = {
-  title: 'Aretian',
-  description: '',
+  title: 'Aretian | Urban Analytics and Design',
+  description: 'Urban analytics and design for smarter, more sustainable cities.',
   icons: {
     icon: '/favicon.svg',
   },
@@ -31,9 +31,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className={`${mono.variable} ${serif.variable} antialiased`}>
-        <Header />
-        <main className=''>{children}</main>
+      <body className={`${geo.variable} ${jetbrainsMono.variable} antialiased`}>
+        <CursorProvider>
+          {children}
+          <CursorWrapper />
+        </CursorProvider>
         <Toaster />
       </body>
     </html>
