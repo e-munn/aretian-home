@@ -1,95 +1,338 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import DeckGL from '@deck.gl/react';
-import { PolygonLayer, PathLayer, ScatterplotLayer } from '@deck.gl/layers';
-import { OrbitView } from '@deck.gl/core';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Line, OrbitControls } from '@react-three/drei';
+import * as THREE from 'three';
 
-// 41°23'27.1"N 2°09'23.2"E = 41.39086, 2.15644
+// Barcelona Eixample center
 const CENTER = { lat: 41.39086, lon: 2.15644 };
-const HALF_SIZE_KM = 0.3; // 0.6km / 2
+const HALF_SIZE_KM = 0.4; // 0.8km x 0.8km area
 
-// Convert km to degrees
-const LAT_OFFSET = HALF_SIZE_KM / 111;
-const LON_OFFSET = HALF_SIZE_KM / (111 * Math.cos(CENTER.lat * Math.PI / 180));
+// Eixample grid angle (45 degrees from north)
+const GRID_ANGLE = 44.9 * (Math.PI / 180);
+const GRID_SPACING = 10; // meters between dots
 
-// Bounding box: south,west,north,east
-const BBOX = `${CENTER.lat - LAT_OFFSET},${CENTER.lon - LON_OFFSET},${CENTER.lat + LAT_OFFSET},${CENTER.lon + LON_OFFSET}`;
+// Douglas-Peucker line simplification
+function simplifyPath(
+  path: [number, number, number][],
+  tolerance: number
+): [number, number, number][] {
+  if (path.length < 3) return path;
 
-const SCALE = 500000;
+  // Find point with max distance from line between first and last
+  let maxDist = 0;
+  let maxIdx = 0;
 
-// Lane width in meters (European standard)
-const LANE_WIDTH = 3.5;
-const PARKING_LANE_WIDTH = 2.5;
-const SIDEWALK_WIDTH = 2.0;
-const CYCLE_LANE_WIDTH = 1.5;
+  const [x1, y1] = path[0];
+  const [x2, y2] = path[path.length - 1];
+  const lineLenSq = (x2 - x1) ** 2 + (y2 - y1) ** 2;
 
-// Surface colors [R, G, B]
-const SURFACE_COLORS: Record<string, number[]> = {
-  asphalt: [70, 70, 75],
-  concrete: [85, 85, 90],
-  paved: [75, 75, 80],
-  cobblestone: [100, 90, 75],
-  sett: [95, 85, 70],
-  paving_stones: [90, 85, 80],
-  gravel: [120, 115, 100],
-  dirt: [140, 120, 90],
-  grass: [80, 120, 70],
-  sand: [180, 170, 130],
-  default: [80, 85, 90],
-};
+  for (let i = 1; i < path.length - 1; i++) {
+    const [px, py] = path[i];
+    let dist: number;
 
-// Road hierarchy with default lanes
-const ROAD_DEFAULTS: Record<string, { lanes: number; hasCenter: boolean; hasSidewalk: boolean }> = {
-  motorway: { lanes: 3, hasCenter: true, hasSidewalk: false },
-  motorway_link: { lanes: 1, hasCenter: false, hasSidewalk: false },
-  trunk: { lanes: 2, hasCenter: true, hasSidewalk: false },
-  trunk_link: { lanes: 1, hasCenter: false, hasSidewalk: false },
-  primary: { lanes: 2, hasCenter: true, hasSidewalk: true },
-  primary_link: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  secondary: { lanes: 2, hasCenter: true, hasSidewalk: true },
-  secondary_link: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  tertiary: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  tertiary_link: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  residential: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  living_street: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  service: { lanes: 1, hasCenter: false, hasSidewalk: false },
-  unclassified: { lanes: 1, hasCenter: false, hasSidewalk: true },
-  pedestrian: { lanes: 0, hasCenter: false, hasSidewalk: false },
-  footway: { lanes: 0, hasCenter: false, hasSidewalk: false },
-  cycleway: { lanes: 0, hasCenter: false, hasSidewalk: false },
-  path: { lanes: 0, hasCenter: false, hasSidewalk: false },
-  default: { lanes: 1, hasCenter: false, hasSidewalk: true },
-};
+    if (lineLenSq === 0) {
+      dist = Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
+    } else {
+      const t = Math.max(0, Math.min(1, ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / lineLenSq));
+      const projX = x1 + t * (x2 - x1);
+      const projY = y1 + t * (y2 - y1);
+      dist = Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+    }
 
-function project(lon: number, lat: number, z: number = 0): [number, number, number] {
-  const x = (lon - CENTER.lon) * SCALE * Math.cos(CENTER.lat * Math.PI / 180);
-  const y = (lat - CENTER.lat) * SCALE;
-  return [x, y, z];
+    if (dist > maxDist) {
+      maxDist = dist;
+      maxIdx = i;
+    }
+  }
+
+  if (maxDist > tolerance) {
+    const left = simplifyPath(path.slice(0, maxIdx + 1), tolerance);
+    const right = simplifyPath(path.slice(maxIdx), tolerance);
+    return [...left.slice(0, -1), ...right];
+  }
+
+  return [path[0], path[path.length - 1]];
 }
 
-// Fetch comprehensive OSM data
+// Snap a point to the rotated grid
+function snapToGrid(x: number, y: number, spacing: number, angle: number): [number, number, number] {
+  const cos = Math.cos(-angle);
+  const sin = Math.sin(-angle);
+
+  // Rotate to grid space
+  const gx = x * cos - y * sin;
+  const gy = x * sin + y * cos;
+
+  // Snap to grid
+  const sx = Math.round(gx / spacing) * spacing;
+  const sy = Math.round(gy / spacing) * spacing;
+
+  // Rotate back to world space
+  const cosBack = Math.cos(angle);
+  const sinBack = Math.sin(angle);
+  const wx = sx * cosBack - sy * sinBack;
+  const wy = sx * sinBack + sy * cosBack;
+
+  return [wx, wy, 0];
+}
+
+// Snap a single segment to grid
+function snapSegmentToGrid(
+  start: [number, number, number],
+  end: [number, number, number],
+  spacing: number,
+  angle: number
+): [number, number, number][] {
+  const cos = Math.cos(-angle);
+  const sin = Math.sin(-angle);
+  const cosBack = Math.cos(angle);
+  const sinBack = Math.sin(angle);
+
+  const toGridFloat = (x: number, y: number) => {
+    const gx = x * cos - y * sin;
+    const gy = x * sin + y * cos;
+    return [gx / spacing, gy / spacing];
+  };
+
+  const toWorld = (gx: number, gy: number): [number, number, number] => {
+    const wx = gx * spacing;
+    const wy = gy * spacing;
+    return [
+      wx * cosBack - wy * sinBack,
+      wx * sinBack + wy * cosBack,
+      0
+    ];
+  };
+
+  const [startGx, startGy] = toGridFloat(start[0], start[1]);
+  const [endGx, endGy] = toGridFloat(end[0], end[1]);
+
+  const totalDx = endGx - startGx;
+  const totalDy = endGy - startGy;
+  const absDx = Math.abs(totalDx);
+  const absDy = Math.abs(totalDy);
+
+  // More aggressive thresholds for straightness
+  const ratio = absDx > 0.001 ? absDy / absDx : 1000;
+  let dominantDir: 'h' | 'v' | 'd';
+  if (ratio < 0.2) {
+    dominantDir = 'h';
+  } else if (ratio > 5) {
+    dominantDir = 'v';
+  } else {
+    dominantDir = 'd';
+  }
+
+  const result: [number, number, number][] = [];
+  let cx = Math.round(startGx);
+  let cy = Math.round(startGy);
+  result.push(toWorld(cx, cy));
+
+  const targetX = Math.round(endGx);
+  const targetY = Math.round(endGy);
+
+  while (cx !== targetX || cy !== targetY) {
+    const dx = targetX - cx;
+    const dy = targetY - cy;
+
+    if (dominantDir === 'h') {
+      if (dx !== 0) {
+        cx += Math.sign(dx);
+        const idealY = startGy + (totalDy / totalDx) * (cx - startGx);
+        if (Math.abs(cy - idealY) > 0.8) {
+          cy += Math.sign(idealY - cy);
+        }
+      } else if (dy !== 0) {
+        cy += Math.sign(dy);
+      }
+    } else if (dominantDir === 'v') {
+      if (dy !== 0) {
+        cy += Math.sign(dy);
+        const idealX = startGx + (totalDx / totalDy) * (cy - startGy);
+        if (Math.abs(cx - idealX) > 0.8) {
+          cx += Math.sign(idealX - cx);
+        }
+      } else if (dx !== 0) {
+        cx += Math.sign(dx);
+      }
+    } else {
+      if (dx !== 0 && dy !== 0) {
+        cx += Math.sign(dx);
+        cy += Math.sign(dy);
+      } else if (dx !== 0) {
+        cx += Math.sign(dx);
+      } else if (dy !== 0) {
+        cy += Math.sign(dy);
+      }
+    }
+
+    result.push(toWorld(cx, cy));
+  }
+
+  return result;
+}
+
+// Snap a road path to grid with simplification first
+function snapRoadToGrid(
+  path: [number, number, number][],
+  spacing: number,
+  angle: number
+): [number, number, number][] {
+  if (path.length < 2) return path;
+
+  // Simplify path minimally (tolerance = 0.25x grid spacing)
+  const simplified = simplifyPath(path, spacing * 0.25);
+
+  // Process each segment independently
+  const result: [number, number, number][] = [];
+
+  for (let i = 0; i < simplified.length - 1; i++) {
+    const segmentPoints = snapSegmentToGrid(simplified[i], simplified[i + 1], spacing, angle);
+
+    // Add points, avoiding duplicates at segment boundaries
+    if (i === 0) {
+      result.push(...segmentPoints);
+    } else {
+      result.push(...segmentPoints.slice(1));
+    }
+  }
+
+  return result;
+}
+
+// Deduplicate sidewalks from primary roads - shift entire sidewalk if it overlaps
+function deduplicateRoads(
+  roads: { path: [number, number, number][]; type: string; width: number }[],
+  spacing: number,
+  angle: number
+): { path: [number, number, number][]; type: string; width: number }[] {
+  const cos = Math.cos(-angle);
+  const sin = Math.sin(-angle);
+  const cosBack = Math.cos(angle);
+  const sinBack = Math.sin(angle);
+
+  // Convert world coord to grid key
+  const toGridKey = (x: number, y: number): string => {
+    const gx = x * cos - y * sin;
+    const gy = x * sin + y * cos;
+    return `${Math.round(gx / spacing)},${Math.round(gy / spacing)}`;
+  };
+
+  // First pass: collect all grid points used by primary/secondary/tertiary roads
+  const primaryPoints = new Set<string>();
+  const primaryRoads = roads.filter(r =>
+    r.type === 'primary' || r.type === 'secondary' || r.type === 'tertiary'
+  );
+
+  for (const road of primaryRoads) {
+    for (const [x, y] of road.path) {
+      primaryPoints.add(toGridKey(x, y));
+    }
+  }
+
+  // Second pass: for non-primary roads, check overlap and shift ENTIRE path
+  return roads.map(road => {
+    if (road.type === 'primary' || road.type === 'secondary' || road.type === 'tertiary') {
+      return road; // Keep primary roads as-is
+    }
+
+    // Count how many points overlap with primary roads
+    let overlapCount = 0;
+    for (const [x, y] of road.path) {
+      if (primaryPoints.has(toGridKey(x, y))) {
+        overlapCount++;
+      }
+    }
+
+    // If significant overlap (>30% of points), shift entire path
+    if (overlapCount > road.path.length * 0.3) {
+      // Determine road direction to shift perpendicular
+      const start = road.path[0];
+      const end = road.path[road.path.length - 1];
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+
+      // Perpendicular direction (rotate 90°)
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const perpX = -dy / len;
+      const perpY = dx / len;
+
+      // Try shifting by 1 grid cell perpendicular to road direction
+      const shifts = [1, -1, 2, -2];
+
+      for (const shift of shifts) {
+        const offsetX = perpX * spacing * shift;
+        const offsetY = perpY * spacing * shift;
+
+        // Check if shifted path is clear
+        let isClear = true;
+        for (const [x, y] of road.path) {
+          const newKey = toGridKey(x + offsetX, y + offsetY);
+          if (primaryPoints.has(newKey)) {
+            isClear = false;
+            break;
+          }
+        }
+
+        if (isClear) {
+          // Apply shift to entire path
+          const newPath = road.path.map(([x, y, z]): [number, number, number] => [
+            x + offsetX,
+            y + offsetY,
+            z
+          ]);
+          return { ...road, path: newPath };
+        }
+      }
+    }
+
+    return road;
+  });
+}
+
+// Generate rotated dot grid
+function generateDotGrid(extent: number, spacing: number, angle: number) {
+  const dots: [number, number, number][] = [];
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  const gridExtent = extent * 1.5;
+  for (let x = -gridExtent; x <= gridExtent; x += spacing) {
+    for (let y = -gridExtent; y <= gridExtent; y += spacing) {
+      const rx = x * cos - y * sin;
+      const ry = x * sin + y * cos;
+
+      if (Math.abs(rx) <= extent && Math.abs(ry) <= extent) {
+        dots.push([rx, ry, 0]);
+      }
+    }
+  }
+  return dots;
+}
+
+// Bounding box
+const LAT_OFFSET = HALF_SIZE_KM / 111;
+const LON_OFFSET = HALF_SIZE_KM / (111 * Math.cos(CENTER.lat * Math.PI / 180));
+const BBOX = `${CENTER.lat - LAT_OFFSET},${CENTER.lon - LON_OFFSET},${CENTER.lat + LAT_OFFSET},${CENTER.lon + LON_OFFSET}`;
+
+function project(lon: number, lat: number, decimals: number = 7): [number, number, number] {
+  // Round to specified decimal places before projecting
+  const factor = Math.pow(10, decimals);
+  const roundedLon = Math.round(lon * factor) / factor;
+  const roundedLat = Math.round(lat * factor) / factor;
+  const x = (roundedLon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
+  const y = (roundedLat - CENTER.lat) * 111000;
+  return [x, y, 0];
+}
+
+// Fetch OSM road data
 async function fetchOSMData() {
   const query = `
-    [out:json][timeout:60];
+    [out:json][timeout:30];
     (
-      // Buildings
-      way["building"](${BBOX});
-      // Roads
-      way["highway"](${BBOX});
-      // Sidewalks
-      way["footway"="sidewalk"](${BBOX});
-      way["highway"="footway"]["footway"="sidewalk"](${BBOX});
-      // Crossings
-      node["highway"="crossing"](${BBOX});
-      way["footway"="crossing"](${BBOX});
-      // Traffic signals
-      node["highway"="traffic_signals"](${BBOX});
-      // Parking
-      way["amenity"="parking"](${BBOX});
-      // Cycle lanes
-      way["cycleway"](${BBOX});
-      way["highway"="cycleway"](${BBOX});
+      way["highway"~"^(primary|secondary|tertiary|residential|living_street|pedestrian|service|footway)$"](${BBOX});
     );
     out body;
     >;
@@ -106,586 +349,367 @@ async function fetchOSMData() {
   return response.json();
 }
 
-// Calculate road width from OSM tags
-function calculateRoadWidth(tags: any, roadType: string): number {
-  // Use explicit width tag if available
-  if (tags.width) {
-    const width = parseFloat(tags.width);
-    if (!isNaN(width)) return width;
-  }
+// Raw road data with lat/lon coordinates
+type RawRoad = { rawPath: { lon: number; lat: number }[]; type: string; width: number };
 
-  // Calculate from lanes
-  const defaults = ROAD_DEFAULTS[roadType] || ROAD_DEFAULTS.default;
-  let lanes = parseInt(tags.lanes) || defaults.lanes;
+// Parse roads from OSM data (store raw lat/lon)
+function parseRoadsRaw(data: any): RawRoad[] {
+  const nodes: Record<number, { lon: number; lat: number }> = {};
+  const roads: RawRoad[] = [];
 
-  // Handle one-way streets (usually have lanes in one direction)
-  if (tags.oneway === 'yes' && !tags.lanes) {
-    lanes = Math.max(1, lanes);
-  }
-
-  let width = lanes * LANE_WIDTH;
-
-  // Add parking lanes
-  if (tags['parking:lane:both'] || tags['parking:lane:left'] || tags['parking:lane:right']) {
-    const leftParking = tags['parking:lane:left'] && tags['parking:lane:left'] !== 'no';
-    const rightParking = tags['parking:lane:right'] && tags['parking:lane:right'] !== 'no';
-    const bothParking = tags['parking:lane:both'] && tags['parking:lane:both'] !== 'no';
-
-    if (bothParking) width += PARKING_LANE_WIDTH * 2;
-    else {
-      if (leftParking) width += PARKING_LANE_WIDTH;
-      if (rightParking) width += PARKING_LANE_WIDTH;
-    }
-  }
-
-  // Add cycle lanes
-  if (tags['cycleway:left'] || tags['cycleway:right'] || tags.cycleway) {
-    if (tags['cycleway:both'] || tags.cycleway === 'lane') {
-      width += CYCLE_LANE_WIDTH * 2;
-    } else {
-      if (tags['cycleway:left']) width += CYCLE_LANE_WIDTH;
-      if (tags['cycleway:right']) width += CYCLE_LANE_WIDTH;
-    }
-  }
-
-  // Minimum widths for pedestrian paths
-  if (roadType === 'footway' || roadType === 'path') {
-    width = Math.max(1.5, width);
-  } else if (roadType === 'cycleway') {
-    width = Math.max(2, width);
-  } else {
-    width = Math.max(3, width); // Minimum road width
-  }
-
-  return width;
-}
-
-// Offset a path to create parallel lines (for sidewalks)
-function offsetPath(path: [number, number, number][], offset: number, zOffset: number = 0): [number, number, number][] {
-  if (path.length < 2) return path;
-
-  const result: [number, number, number][] = [];
-
-  for (let i = 0; i < path.length; i++) {
-    let nx = 0, ny = 0;
-
-    if (i === 0) {
-      // First point - use direction to next point
-      const dx = path[1][0] - path[0][0];
-      const dy = path[1][1] - path[0][1];
-      const len = Math.sqrt(dx * dx + dy * dy);
-      nx = -dy / len;
-      ny = dx / len;
-    } else if (i === path.length - 1) {
-      // Last point - use direction from previous point
-      const dx = path[i][0] - path[i - 1][0];
-      const dy = path[i][1] - path[i - 1][1];
-      const len = Math.sqrt(dx * dx + dy * dy);
-      nx = -dy / len;
-      ny = dx / len;
-    } else {
-      // Middle points - average of both directions
-      const dx1 = path[i][0] - path[i - 1][0];
-      const dy1 = path[i][1] - path[i - 1][1];
-      const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-
-      const dx2 = path[i + 1][0] - path[i][0];
-      const dy2 = path[i + 1][1] - path[i][1];
-      const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-      nx = (-dy1 / len1 - dy2 / len2) / 2;
-      ny = (dx1 / len1 + dx2 / len2) / 2;
-
-      const nlen = Math.sqrt(nx * nx + ny * ny);
-      if (nlen > 0) {
-        nx /= nlen;
-        ny /= nlen;
-      }
-    }
-
-    result.push([path[i][0] + nx * offset, path[i][1] + ny * offset, (path[i][2] || 0) + zOffset]);
-  }
-
-  return result;
-}
-
-// Parse OSM data into structured objects
-function parseOSMData(data: any) {
-  const nodes: Record<number, { lon: number; lat: number; tags?: any }> = {};
-  const buildings: any[] = [];
-  const roads: any[] = [];
-  const sidewalks: any[] = [];
-  const crossings: any[] = [];
-  const trafficSignals: any[] = [];
-  const cycleways: any[] = [];
-  const parkingAreas: any[] = [];
-
-  // Index all nodes
   for (const el of data.elements) {
     if (el.type === 'node') {
-      nodes[el.id] = { lon: el.lon, lat: el.lat, tags: el.tags };
-
-      // Collect point features
-      if (el.tags?.highway === 'crossing') {
-        crossings.push({
-          position: project(el.lon, el.lat, 0.2),
-          type: el.tags.crossing || 'unmarked',
-        });
-      }
-      if (el.tags?.highway === 'traffic_signals') {
-        trafficSignals.push({
-          position: project(el.lon, el.lat, 3), // Traffic signals elevated
-        });
-      }
+      nodes[el.id] = { lon: el.lon, lat: el.lat };
     }
   }
 
-  // Process ways
+  const widths: Record<string, number> = {
+    primary: 12,
+    secondary: 10,
+    tertiary: 8,
+    residential: 6,
+    living_street: 5,
+    pedestrian: 4,
+    service: 4,
+    footway: 2,
+  };
+
   for (const el of data.elements) {
-    if (el.type !== 'way' || !el.nodes) continue;
+    if (el.type !== 'way' || !el.nodes || !el.tags?.highway) continue;
 
-    const coords = el.nodes
+    const rawPath = el.nodes
       .map((id: number) => nodes[id])
-      .filter(Boolean)
-      .map((n: any) => project(n.lon, n.lat));
+      .filter(Boolean);
 
-    if (coords.length < 2) continue;
-
-    const tags = el.tags || {};
-
-    // Buildings
-    if (tags.building) {
-      const polygon = [...coords];
-      if (polygon.length > 2) {
-        const first = polygon[0];
-        const last = polygon[polygon.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          polygon.push(first);
-        }
-      }
-
-      const levels = parseFloat(tags['building:levels']) || Math.floor(Math.random() * 4) + 2;
-      buildings.push({
-        polygon,
-        height: levels * 3.5,
-        type: tags.building,
-      });
-    }
-    // Highways/Roads
-    else if (tags.highway) {
-      const roadType = tags.highway;
-
-      // Sidewalks as separate ways
-      if (tags.footway === 'sidewalk' || (roadType === 'footway' && tags.footway === 'sidewalk')) {
-        sidewalks.push({
-          path: coords.map((c: [number, number, number]) => [c[0], c[1], 0.15] as [number, number, number]),
-          width: SIDEWALK_WIDTH,
-          surface: tags.surface || 'paved',
-        });
-        continue;
-      }
-
-      // Crossings as ways
-      if (tags.footway === 'crossing') {
-        crossings.push({
-          path: coords,
-          type: tags.crossing || 'unmarked',
-          isWay: true,
-        });
-        continue;
-      }
-
-      // Cycleways
-      if (roadType === 'cycleway') {
-        cycleways.push({
-          path: coords,
-          width: parseFloat(tags.width) || CYCLE_LANE_WIDTH * 2,
-          surface: tags.surface || 'asphalt',
-        });
-        continue;
-      }
-
-      // Skip footways and paths for main road layer
-      if (roadType === 'footway' || roadType === 'path' || roadType === 'steps') {
-        sidewalks.push({
-          path: coords.map((c: [number, number, number]) => [c[0], c[1], 0.15] as [number, number, number]),
-          width: parseFloat(tags.width) || 1.5,
-          surface: tags.surface || 'paved',
-        });
-        continue;
-      }
-
-      // Main roads
-      const defaults = ROAD_DEFAULTS[roadType] || ROAD_DEFAULTS.default;
-      const width = calculateRoadWidth(tags, roadType);
-      const surface = tags.surface || 'asphalt';
-      const surfaceColor = SURFACE_COLORS[surface] || SURFACE_COLORS.default;
-
-      const road = {
-        path: coords,
-        type: roadType,
-        width,
-        lanes: parseInt(tags.lanes) || defaults.lanes,
-        surface,
-        surfaceColor,
-        oneway: tags.oneway === 'yes',
-        name: tags.name || '',
-        hasCenter: defaults.hasCenter && (parseInt(tags.lanes) || defaults.lanes) >= 2,
-        maxspeed: tags.maxspeed,
-      };
-
-      roads.push(road);
-
-      // Generate implicit sidewalks for roads that should have them
-      if (defaults.hasSidewalk && tags.sidewalk !== 'no') {
-        const sidewalkOffset = width / 2 + SIDEWALK_WIDTH / 2 + 0.5;
-
-        if (tags.sidewalk === 'both' || tags.sidewalk === 'left' || !tags.sidewalk) {
-          sidewalks.push({
-            path: offsetPath(coords, -sidewalkOffset, 0.15), // Elevated sidewalk
-            width: SIDEWALK_WIDTH,
-            surface: 'paved',
-            implicit: true,
-          });
-        }
-        if (tags.sidewalk === 'both' || tags.sidewalk === 'right' || !tags.sidewalk) {
-          sidewalks.push({
-            path: offsetPath(coords, sidewalkOffset, 0.15), // Elevated sidewalk
-            width: SIDEWALK_WIDTH,
-            surface: 'paved',
-            implicit: true,
-          });
-        }
-      }
-    }
-    // Parking areas
-    else if (tags.amenity === 'parking') {
-      const polygon = [...coords];
-      if (polygon.length > 2) {
-        const first = polygon[0];
-        const last = polygon[polygon.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          polygon.push(first);
-        }
-      }
-      parkingAreas.push({
-        polygon,
-        surface: tags.surface || 'asphalt',
+    if (rawPath.length >= 2) {
+      roads.push({
+        rawPath,
+        type: el.tags.highway,
+        width: widths[el.tags.highway] || 5,
       });
     }
   }
 
-  return { buildings, roads, sidewalks, crossings, trafficSignals, cycleways, parkingAreas };
+  return roads;
 }
 
-// Generate crosswalk stripes
-function generateCrosswalkStripes(crossing: any) {
-  if (!crossing.path || crossing.path.length < 2) return [];
+// Project raw roads with given precision
+function projectRoads(rawRoads: RawRoad[], decimals: number) {
+  return rawRoads.map(road => ({
+    path: road.rawPath.map(n => project(n.lon, n.lat, decimals)),
+    type: road.type,
+    width: road.width,
+  }));
+}
 
-  const path = crossing.path;
-  const stripes: any[] = [];
+// Dot grid using instanced mesh
+function DotGrid() {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dots = useMemo(() => generateDotGrid(500, GRID_SPACING, GRID_ANGLE), []);
 
-  // Calculate direction
-  const dx = path[path.length - 1][0] - path[0][0];
-  const dy = path[path.length - 1][1] - path[0][1];
-  const len = Math.sqrt(dx * dx + dy * dy);
-  const ux = dx / len;
-  const uy = dy / len;
-
-  // Perpendicular
-  const px = -uy;
-  const py = ux;
-
-  // Generate stripes along the crossing
-  const stripeWidth = 0.5;
-  const stripeGap = 0.5;
-  const stripeLength = 3;
-  const numStripes = Math.floor(len / (stripeWidth + stripeGap));
-
-  for (let i = 0; i < numStripes; i++) {
-    const t = (i + 0.5) * (stripeWidth + stripeGap);
-    const cx = path[0][0] + ux * t;
-    const cy = path[0][1] + uy * t;
-
-    stripes.push({
-      path: [
-        [cx - px * stripeLength / 2, cy - py * stripeLength / 2, 0.1],
-        [cx + px * stripeLength / 2, cy + py * stripeLength / 2, 0.1],
-      ],
+  useEffect(() => {
+    if (!meshRef.current) return;
+    const tempObject = new THREE.Object3D();
+    dots.forEach((pos, i) => {
+      tempObject.position.set(pos[0], pos[1], pos[2]);
+      tempObject.updateMatrix();
+      meshRef.current!.setMatrixAt(i, tempObject.matrix);
     });
-  }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  }, [dots]);
 
-  return stripes;
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, dots.length]}>
+      <circleGeometry args={[0.8, 6]} />
+      <meshBasicMaterial color="#ff8800" />
+    </instancedMesh>
+  );
+}
+
+// Original road component (faded)
+function Roads({ roads }: { roads: { path: [number, number, number][]; type: string; width: number }[] }) {
+  return (
+    <group>
+      {roads.map((road, i) => (
+        <Line
+          key={i}
+          points={road.path}
+          color={new THREE.Color(80 / 255, 90 / 255, 100 / 255)}
+          transparent
+          opacity={0.4}
+          lineWidth={road.width * 0.5}
+        />
+      ))}
+    </group>
+  );
+}
+
+// Snapped road component (grid-aligned)
+function SnappedRoads({ roads }: { roads: { path: [number, number, number][]; type: string; width: number }[] }) {
+  const snappedRoads = useMemo(() => {
+    // First snap all roads to grid
+    const snapped = roads.map(road => ({
+      ...road,
+      path: snapRoadToGrid(road.path, GRID_SPACING, GRID_ANGLE)
+    }));
+    // Then deduplicate - shift sidewalks off primary road paths
+    return deduplicateRoads(snapped, GRID_SPACING, GRID_ANGLE);
+  }, [roads]);
+
+  return (
+    <group>
+      {snappedRoads.map((road, i) => (
+        <Line
+          key={i}
+          points={road.path}
+          color="#00ff88"
+          lineWidth={road.width * 0.3}
+        />
+      ))}
+    </group>
+  );
+}
+
+// Flow particles using InstancedMesh
+function FlowParticles({ roads }: { roads: { path: [number, number, number][]; type: string; width: number }[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const tempObject = useMemo(() => new THREE.Object3D(), []);
+
+  const particleRoads = useMemo(() => roads.slice(0, 40), [roads]);
+  const particleCount = particleRoads.length * 2;
+
+  const pathData = useMemo(() => {
+    return particleRoads.map((road, ri) => {
+      const path = road.path;
+      let totalLen = 0;
+      const segLengths: number[] = [];
+
+      for (let i = 1; i < path.length; i++) {
+        const segLen = Math.sqrt(
+          Math.pow(path[i][0] - path[i - 1][0], 2) +
+          Math.pow(path[i][1] - path[i - 1][1], 2)
+        );
+        segLengths.push(segLen);
+        totalLen += segLen;
+      }
+
+      return { path, totalLen, segLengths, offsets: [(ri * 37) % 500, (ri * 37 + 167) % 500] };
+    });
+  }, [particleRoads]);
+
+  useFrame(({ clock }) => {
+    if (!meshRef.current) return;
+
+    const time = (clock.getElapsedTime() * 100) % 500;
+    let idx = 0;
+
+    for (const { path, totalLen, segLengths, offsets } of pathData) {
+      if (path.length < 2) continue;
+
+      for (const offset of offsets) {
+        const progress = ((time + offset) % 500) / 500;
+        let targetDist = progress * totalLen;
+        let pos: [number, number, number] = path[0];
+
+        for (let i = 0; i < segLengths.length; i++) {
+          if (targetDist <= segLengths[i]) {
+            const t = targetDist / segLengths[i];
+            pos = [
+              path[i][0] + (path[i + 1][0] - path[i][0]) * t,
+              path[i][1] + (path[i + 1][1] - path[i][1]) * t,
+              0.1,
+            ];
+            break;
+          }
+          targetDist -= segLengths[i];
+          pos = [path[i + 1][0], path[i + 1][1], 0.1];
+        }
+
+        tempObject.position.set(pos[0], pos[1], pos[2]);
+        tempObject.updateMatrix();
+        meshRef.current.setMatrixAt(idx, tempObject.matrix);
+        idx++;
+      }
+    }
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, particleCount]}>
+      <circleGeometry args={[4, 16]} />
+      <meshBasicMaterial color={new THREE.Color(0 / 255, 194 / 255, 23 / 255)} transparent opacity={0.47} />
+    </instancedMesh>
+  );
+}
+
+// Scene content
+function Scene({
+  roads,
+  showGrid,
+  showOriginalRoads,
+  showSnappedRoads,
+  showParticles,
+}: {
+  roads: { path: [number, number, number][]; type: string; width: number }[];
+  showGrid: boolean;
+  showOriginalRoads: boolean;
+  showSnappedRoads: boolean;
+  showParticles: boolean;
+}) {
+  return (
+    <>
+      {showGrid && <DotGrid />}
+      {showOriginalRoads && <Roads roads={roads} />}
+      {showSnappedRoads && <SnappedRoads roads={roads} />}
+      {showParticles && <FlowParticles roads={roads} />}
+      <OrbitControls enableRotate={false} />
+    </>
+  );
 }
 
 export default function CityScene() {
-  const [data, setData] = useState<any>(null);
-  const [time, setTime] = useState(0);
+  const [rawRoads, setRawRoads] = useState<RawRoad[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch OSM data
+  // Layer visibility toggles
+  const [showGrid, setShowGrid] = useState(true);
+  const [showOriginalRoads, setShowOriginalRoads] = useState(false);
+  const [showSnappedRoads, setShowSnappedRoads] = useState(true);
+  const [showParticles, setShowParticles] = useState(true);
+  const [precision, setPrecision] = useState(6); // decimal places
+
+  // Project roads with current precision
+  const roads = useMemo(() => {
+    return projectRoads(rawRoads, precision);
+  }, [rawRoads, precision]);
+
   useEffect(() => {
     fetchOSMData()
-      .then((osmData) => {
-        const parsed = parseOSMData(osmData);
-        setData(parsed);
+      .then((data) => {
+        const parsedRoads = parseRoadsRaw(data);
+        setRawRoads(parsedRoads);
         setLoading(false);
-        console.log('Loaded:', {
-          buildings: parsed.buildings.length,
-          roads: parsed.roads.length,
-          sidewalks: parsed.sidewalks.length,
-          crossings: parsed.crossings.length,
-          signals: parsed.trafficSignals.length,
-        });
+        console.log(`Loaded ${parsedRoads.length} roads`);
+
+        // Analyze primary road angles
+        const primaryRoads = parsedRoads.filter(r =>
+          r.type === 'primary' || r.type === 'secondary'
+        );
+
+        const angles: number[] = [];
+        for (const road of primaryRoads) {
+          const rawPath = road.rawPath;
+          if (rawPath.length < 2) continue;
+
+          // Project for analysis
+          const path = rawPath.map(n => project(n.lon, n.lat, 7));
+
+          // Calculate angle for each segment
+          for (let i = 1; i < path.length; i++) {
+            const dx = path[i][0] - path[i-1][0];
+            const dy = path[i][1] - path[i-1][1];
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 10) continue; // Skip very short segments
+
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            // Normalize to 0-90 range (we only care about orientation, not direction)
+            while (angle < 0) angle += 180;
+            while (angle >= 90) angle -= 90;
+            // Convert to 45-centered (Eixample is ~45°)
+            if (angle < 22.5) angle += 90;
+            if (angle > 67.5) angle -= 90;
+
+            angles.push(angle);
+          }
+        }
+
+        if (angles.length > 0) {
+          // Weight by segment length would be better, but this gives a quick estimate
+          const avgAngle = angles.reduce((a, b) => a + b, 0) / angles.length;
+          const sortedAngles = [...angles].sort((a, b) => a - b);
+          const medianAngle = sortedAngles[Math.floor(sortedAngles.length / 2)];
+
+          console.log(`Primary road angle analysis:`);
+          console.log(`  Segments analyzed: ${angles.length}`);
+          console.log(`  Average angle: ${avgAngle.toFixed(2)}°`);
+          console.log(`  Median angle: ${medianAngle.toFixed(2)}°`);
+          console.log(`  Min: ${Math.min(...angles).toFixed(2)}°, Max: ${Math.max(...angles).toFixed(2)}°`);
+        }
       })
       .catch((err) => {
         console.error('OSM fetch error:', err);
-        setError(err.message);
         setLoading(false);
       });
   }, []);
 
-  // Animation loop
-  useEffect(() => {
-    let animationId: number;
-    const animate = () => {
-      setTime((t) => (t + 1) % 500);
-      animationId = requestAnimationFrame(animate);
-    };
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, []);
-
-  if (!data) {
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: '#010029', zIndex: -1 }}>
-        <div style={{ position: 'absolute', bottom: 20, left: 20, color: '#00C217' }}>
-          {loading ? 'Loading OSM data...' : error ? `Error: ${error}` : ''}
-        </div>
-      </div>
-    );
-  }
-
-  const { buildings, roads, sidewalks, crossings, trafficSignals, cycleways, parkingAreas } = data;
-
-  // Generate animated flows
-  const flows = roads.slice(0, 60).flatMap((road: any, roadIdx: number) => {
-    const path = road.path;
-    if (path.length < 2) return [];
-
-    return [0, 1, 2].map((particleIdx) => {
-      const offset = (roadIdx * 37 + particleIdx * 167) % 500;
-      const progress = ((time + offset) % 500) / 500;
-
-      let totalLength = 0;
-      for (let i = 1; i < path.length; i++) {
-        const dx = path[i][0] - path[i - 1][0];
-        const dy = path[i][1] - path[i - 1][1];
-        totalLength += Math.sqrt(dx * dx + dy * dy);
-      }
-
-      let targetDist = progress * totalLength;
-      let px = path[0][0], py = path[0][1];
-
-      for (let i = 1; i < path.length; i++) {
-        const dx = path[i][0] - path[i - 1][0];
-        const dy = path[i][1] - path[i - 1][1];
-        const segLen = Math.sqrt(dx * dx + dy * dy);
-
-        if (targetDist <= segLen) {
-          const t = targetDist / segLen;
-          px = path[i - 1][0] + dx * t;
-          py = path[i - 1][1] + dy * t;
-          break;
-        }
-        targetDist -= segLen;
-        px = path[i][0];
-        py = path[i][1];
-      }
-
-      return { position: [px, py, 1] }; // Elevated slightly above roads
-    });
+  const buttonStyle = (active: boolean) => ({
+    padding: '6px 12px',
+    fontSize: 11,
+    background: active ? 'rgba(0, 194, 23, 0.3)' : 'rgba(255, 255, 255, 0.1)',
+    border: `1px solid ${active ? '#00C217' : 'rgba(255, 255, 255, 0.2)'}`,
+    borderRadius: 4,
+    color: active ? '#00C217' : 'rgba(255, 255, 255, 0.5)',
+    cursor: 'pointer',
   });
 
-  // Generate crosswalk stripes
-  const crosswalkStripes = crossings
-    .filter((c: any) => c.isWay)
-    .flatMap(generateCrosswalkStripes);
-
-  const layers = [
-    // Parking areas
-    new PolygonLayer({
-      id: 'parking',
-      data: parkingAreas,
-      getPolygon: (d: any) => d.polygon,
-      getFillColor: [50, 55, 60, 200],
-      getLineColor: [70, 75, 80, 255],
-      getLineWidth: 1,
-      lineWidthMinPixels: 1,
-    }),
-
-    // Road casing (dark outline)
-    new PathLayer({
-      id: 'road-casing',
-      data: roads,
-      getPath: (d: any) => d.path,
-      getColor: [30, 35, 40, 255],
-      getWidth: (d: any) => d.width + 2,
-      widthMinPixels: 3,
-      widthScale: 1,
-      capRounded: true,
-      jointRounded: true,
-    }),
-
-    // Road fill
-    new PathLayer({
-      id: 'road-fill',
-      data: roads,
-      getPath: (d: any) => d.path,
-      getColor: (d: any) => [...d.surfaceColor, 255],
-      getWidth: (d: any) => d.width,
-      widthMinPixels: 2,
-      widthScale: 1,
-      capRounded: true,
-      jointRounded: true,
-    }),
-
-    // Sidewalks
-    new PathLayer({
-      id: 'sidewalks',
-      data: sidewalks,
-      getPath: (d: any) => d.path,
-      getColor: [130, 130, 125, 200],
-      getWidth: (d: any) => d.width,
-      widthMinPixels: 1,
-      widthScale: 1,
-      capRounded: true,
-      jointRounded: true,
-    }),
-
-    // Cycleways
-    new PathLayer({
-      id: 'cycleways',
-      data: cycleways,
-      getPath: (d: any) => d.path,
-      getColor: [100, 150, 100, 255],
-      getWidth: (d: any) => d.width,
-      widthMinPixels: 1,
-      widthScale: 1,
-    }),
-
-    // Center lines (yellow dashed)
-    new PathLayer({
-      id: 'center-lines',
-      data: roads.filter((r: any) => r.hasCenter),
-      getPath: (d: any) => d.path,
-      getColor: [255, 200, 50, 220],
-      getWidth: 0.3,
-      widthMinPixels: 1,
-    }),
-
-    // Edge lines (white)
-    new PathLayer({
-      id: 'edge-lines-left',
-      data: roads.filter((r: any) => r.lanes >= 2),
-      getPath: (d: any) => offsetPath(d.path, -d.width / 2 + 0.3, 0.05),
-      getColor: [255, 255, 255, 150],
-      getWidth: 0.2,
-      widthMinPixels: 1,
-    }),
-
-    new PathLayer({
-      id: 'edge-lines-right',
-      data: roads.filter((r: any) => r.lanes >= 2),
-      getPath: (d: any) => offsetPath(d.path, d.width / 2 - 0.3, 0.05),
-      getColor: [255, 255, 255, 150],
-      getWidth: 0.2,
-      widthMinPixels: 1,
-    }),
-
-    // Crosswalk stripes
-    new PathLayer({
-      id: 'crosswalks',
-      data: crosswalkStripes,
-      getPath: (d: any) => d.path,
-      getColor: [255, 255, 255, 230],
-      getWidth: 0.5,
-      widthMinPixels: 2,
-    }),
-
-    // Traffic signals
-    new ScatterplotLayer({
-      id: 'traffic-signals',
-      data: trafficSignals,
-      getPosition: (d: any) => d.position,
-      getFillColor: [255, 200, 50, 255],
-      getRadius: 1.5,
-      radiusMinPixels: 3,
-    }),
-
-    // Crossing points
-    new ScatterplotLayer({
-      id: 'crossing-points',
-      data: crossings.filter((c: any) => !c.isWay),
-      getPosition: (d: any) => d.position,
-      getFillColor: [255, 255, 255, 200],
-      getRadius: 1,
-      radiusMinPixels: 2,
-    }),
-
-    // Buildings
-    new PolygonLayer({
-      id: 'buildings',
-      data: buildings,
-      extruded: true,
-      filled: true,
-      getPolygon: (d: any) => d.polygon,
-      getElevation: (d: any) => d.height,
-      getFillColor: [0, 194, 23, 130],
-      getLineColor: [0, 194, 23, 180],
-      getLineWidth: 1,
-      lineWidthMinPixels: 1,
-      material: {
-        ambient: 0.4,
-        diffuse: 0.6,
-        shininess: 32,
-      },
-    }),
-
-    // Animated flow particles
-    new ScatterplotLayer({
-      id: 'flows',
-      data: flows,
-      getPosition: (d: any) => d.position,
-      getFillColor: [0, 194, 23, 255],
-      getRadius: 1.5,
-      radiusMinPixels: 3,
-    }),
-  ];
-
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
-      <DeckGL
-        views={new OrbitView({ id: 'orbit', orbitAxis: 'Z' })}
-        initialViewState={{
-          target: [0, 0, 0],
-          zoom: 11,
-          rotationX: -55,      // Tilt angle (negative = looking down)
-          rotationOrbit: 45,   // Horizontal rotation for isometric
-          minZoom: 8,
-          maxZoom: 16,
-          minRotationX: -90,
-          maxRotationX: 0,
-        }}
-        controller={{ rotateSpeed: 0.5, scrollSpeed: 1.5 }}
-        layers={layers}
-        getCursor={() => 'grab'}
-        style={{ background: '#010029' }}
-      />
-      <div style={{ position: 'absolute', bottom: 20, left: 20, color: '#00C217', opacity: 0.5, fontSize: 12 }}>
-        {buildings.length} buildings · {roads.length} roads · {sidewalks.length} sidewalks · {crossings.length} crossings
+    <>
+      {/* Canvas background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -1 }}>
+        <Canvas
+          orthographic
+          camera={{ zoom: 1, position: [0, 0, 100], near: 0.1, far: 1000 }}
+          style={{ background: '#010029' }}
+        >
+          {roads.length > 0 && (
+            <Scene
+              roads={roads}
+              showGrid={showGrid}
+              showOriginalRoads={showOriginalRoads}
+              showSnappedRoads={showSnappedRoads}
+              showParticles={showParticles}
+            />
+          )}
+        </Canvas>
       </div>
-    </div>
+
+      {/* Layer toggles */}
+      <div style={{ position: 'fixed', top: 20, left: 20, display: 'flex', gap: 8, zIndex: 50 }}>
+        <button style={buttonStyle(showGrid)} onClick={() => setShowGrid(!showGrid)}>
+          Grid
+        </button>
+        <button style={buttonStyle(showOriginalRoads)} onClick={() => setShowOriginalRoads(!showOriginalRoads)}>
+          Original
+        </button>
+        <button style={buttonStyle(showSnappedRoads)} onClick={() => setShowSnappedRoads(!showSnappedRoads)}>
+          Snapped
+        </button>
+        <button style={buttonStyle(showParticles)} onClick={() => setShowParticles(!showParticles)}>
+          Particles
+        </button>
+      </div>
+
+      {/* Precision control */}
+      <div style={{ position: 'fixed', top: 60, left: 20, display: 'flex', gap: 8, alignItems: 'center', zIndex: 50 }}>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>Precision:</span>
+        {[4, 5, 6, 7].map(p => (
+          <button
+            key={p}
+            style={buttonStyle(precision === p)}
+            onClick={() => setPrecision(p)}
+          >
+            {p}
+          </button>
+        ))}
+        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, marginLeft: 4 }}>
+          (~{precision === 4 ? '11m' : precision === 5 ? '1.1m' : precision === 6 ? '11cm' : '1cm'})
+        </span>
+      </div>
+
+      <div style={{ position: 'fixed', bottom: 20, left: 20, color: '#00C217', opacity: 0.5, fontSize: 12, zIndex: 50 }}>
+        {loading ? 'Loading...' : `${roads.length} roads`}
+      </div>
+    </>
   );
 }
