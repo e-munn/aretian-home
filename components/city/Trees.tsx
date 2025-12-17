@@ -115,6 +115,7 @@ interface InstancedTreesProps {
   positions: [number, number, number][];
   trunkColor?: string;
   foliageColor?: string;
+  opacity?: number;
 }
 
 export function InstancedTrees({
@@ -196,6 +197,7 @@ export function InstancedPalmTrees({
   positions,
   trunkColor = '#3d3530',  // Darker trunk for contrast
   foliageColor = '#1f5828', // Slightly more vibrant green
+  opacity = 1,
 }: InstancedTreesProps) {
   const trunkRef = useRef<THREE.InstancedMesh>(null);
   const foliageRef = useRef<THREE.InstancedMesh>(null);
@@ -244,11 +246,11 @@ export function InstancedPalmTrees({
     <>
       <instancedMesh ref={trunkRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[PALM_TRUNK_RADIUS * 0.8, PALM_TRUNK_RADIUS, PALM_TRUNK_HEIGHT, 4]} />
-        <meshBasicMaterial color={trunkColor} transparent opacity={0.85} />
+        <meshBasicMaterial color={trunkColor} transparent opacity={0.85 * opacity} />
       </instancedMesh>
 
       <instancedMesh ref={foliageRef} args={[crownGeometry, undefined, positions.length]} frustumCulled>
-        <meshBasicMaterial color={foliageColor} transparent opacity={0.7} />
+        <meshBasicMaterial color={foliageColor} transparent opacity={0.7 * opacity} />
       </instancedMesh>
     </>
   );

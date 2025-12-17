@@ -19,12 +19,14 @@ interface BusStopMarkersProps {
   positions: [number, number, number][];
   color?: string;
   poleHeight?: number;
+  opacity?: number;
 }
 
 export function BusStopMarkers({
   positions,
   color = COLORS.blue500,
   poleHeight = 30,
+  opacity = 1,
 }: BusStopMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const circleRef = useRef<THREE.InstancedMesh>(null);
@@ -60,11 +62,11 @@ export function BusStopMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} transparent opacity={0.75 * opacity} />
       </instancedMesh>
       <instancedMesh ref={circleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <circleGeometry args={[5, 16]} />
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75 * opacity} />
       </instancedMesh>
     </>
   );
@@ -77,12 +79,14 @@ interface BicingMarkersProps {
   positions: [number, number, number][];
   color?: string;
   poleHeight?: number;
+  opacity?: number;
 }
 
 export function BicingMarkers({
   positions,
   color = COLORS.red500,
   poleHeight = 30,
+  opacity = 1,
 }: BicingMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const squareRef = useRef<THREE.InstancedMesh>(null);
@@ -118,11 +122,11 @@ export function BicingMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} transparent opacity={0.75 * opacity} />
       </instancedMesh>
       <instancedMesh ref={squareRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <planeGeometry args={[8, 8]} />
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75 * opacity} />
       </instancedMesh>
     </>
   );
@@ -135,12 +139,14 @@ interface TrafficViolationMarkersProps {
   positions: [number, number, number][];
   color?: string;
   poleHeight?: number;
+  opacity?: number;
 }
 
 export function TrafficViolationMarkers({
   positions,
   color = COLORS.yellow400,
   poleHeight = 30,
+  opacity = 1,
 }: TrafficViolationMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const triangleRef = useRef<THREE.InstancedMesh>(null);
@@ -186,10 +192,10 @@ export function TrafficViolationMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} transparent opacity={0.75 * opacity} />
       </instancedMesh>
       <instancedMesh ref={triangleRef} args={[triangleGeometry, undefined, positions.length]} frustumCulled>
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75 * opacity} />
       </instancedMesh>
     </>
   );

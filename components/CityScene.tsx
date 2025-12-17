@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -24,6 +24,7 @@ const BUILDING_OPACITY = 0.87
 interface SceneProps extends CityData {
   revealed: Record<LayerKey, boolean>
   buildingColor: string
+  getLayerOpacity: (layer: LayerKey) => number
 }
 
 function Scene({
@@ -37,6 +38,7 @@ function Scene({
   bikeLanes,
   revealed,
   buildingColor,
+  getLayerOpacity,
 }: SceneProps) {
   const { camera, size } = useThree()
   const [baseOffset, setBaseOffset] = useState({ x: 0, y: 0 })
@@ -115,23 +117,23 @@ function Scene({
 
   return (
     <group rotation={[0, 0, -GRID_ANGLE]} position={[0, 0, -40]}>
-      {revealed.grid && <DotGrid color="#596689" opacity={0.7} extent={gridExtent} />}
-      {revealed.roads && <Roads roads={roads} />}
-      {revealed.parking && <ParkingZones zones={parkingZones} opacity={0.6} />}
-      {revealed.bikeLanes && <BikeLanes lanes={bikeLanes} color='#44cc66' lineWidth={2} />}
-      {revealed.trees && <InstancedPalmTrees positions={trees} />}
-      {revealed.flowParticles && <FlowParticles roads={roads} />}
+      {revealed.grid && <DotGrid color="#596689" opacity={0.7 * getLayerOpacity('grid')} extent={gridExtent} />}
+      {revealed.roads && <Roads roads={roads} opacity={getLayerOpacity('roads')} />}
+      {revealed.parking && <ParkingZones zones={parkingZones} opacity={0.6 * getLayerOpacity('parking')} />}
+      {revealed.bikeLanes && <BikeLanes lanes={bikeLanes} color='#44cc66' lineWidth={2} opacity={getLayerOpacity('bikeLanes')} />}
+      {revealed.trees && <InstancedPalmTrees positions={trees} opacity={getLayerOpacity('trees')} />}
+      {revealed.flowParticles && <FlowParticles roads={roads} opacity={getLayerOpacity('flowParticles')} />}
       {revealed.buildings && (
         <DetailedBuildings
           buildings={buildings}
           color={buildingColor}
-          fillOpacity={BUILDING_OPACITY}
+          fillOpacity={BUILDING_OPACITY * getLayerOpacity('buildings')}
           edgeOpacity={0}
         />
       )}
-      {revealed.busStops && <BusStopMarkers positions={busStops.map((s) => s.position)} />}
-      {revealed.bicingStations && <BicingMarkers positions={bicingStations.map((s) => s.position)} />}
-      {revealed.trafficViolations && <TrafficViolationMarkers positions={trafficViolations.map((v) => v.position)} />}
+      {revealed.busStops && <BusStopMarkers positions={busStops.map((s) => s.position)} opacity={getLayerOpacity('busStops')} />}
+      {revealed.bicingStations && <BicingMarkers positions={bicingStations.map((s) => s.position)} opacity={getLayerOpacity('bicingStations')} />}
+      {revealed.trafficViolations && <TrafficViolationMarkers positions={trafficViolations.map((v) => v.position)} opacity={getLayerOpacity('trafficViolations')} />}
     </group>
   )
 }
@@ -144,6 +146,15 @@ export default function CityScene() {
 
   // Get revealed state from store
   const revealed = useLayerStore((state) => state.revealed)
+  const hoveredLayers = useLayerStore((state) => state.hoveredLayers)
+
+  // Calculate opacity for a layer based on hover state
+  const getLayerOpacity = useCallback((layer: LayerKey): number => {
+    // If nothing is hovered, everything is at full opacity
+    if (hoveredLayers === null) return 1
+    // Otherwise, only hovered layers are at full opacity
+    return hoveredLayers.includes(layer) ? 1 : 0.15
+  }, [hoveredLayers])
 
   // Building color control
   const [buildingColor, setBuildingColor] = useState(BUILDING_COLOR)
@@ -167,6 +178,7 @@ export default function CityScene() {
             bikeLanes={bikeLanes}
             revealed={revealed}
             buildingColor={buildingColor}
+            getLayerOpacity={getLayerOpacity}
           />
         )}
       </Canvas>
@@ -181,8 +193,7 @@ export default function CityScene() {
         }}
       >
         <ColorPicker
-          initialColor={BUILDING_COLOR}
-          onColorChange={setBuildingColor}
+          onColorChange={(color) => color && setBuildingColor(color)}
         />
       </div>
     </div>

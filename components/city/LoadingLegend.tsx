@@ -108,6 +108,7 @@ function LoadingIcon({
 
   const revealed = useLayerStore((state) => state.revealed);
   const startTime = useLayerStore((state) => state.startTime);
+  const setHoveredLayers = useLayerStore((state) => state.setHoveredLayers);
   const isRevealed = layers.every(l => revealed[l]);
 
   const { activeId, setActiveId } = useContext(MagnetContext);
@@ -176,6 +177,17 @@ function LoadingIcon({
     }
   }, [showPulse]);
 
+  // Handle hover events for layer highlighting
+  const handleMouseEnter = useCallback(() => {
+    if (isRevealed) {
+      setHoveredLayers(layers);
+    }
+  }, [isRevealed, layers, setHoveredLayers]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredLayers(null);
+  }, [setHoveredLayers]);
+
   return (
     <Magnet
       padding={25}
@@ -197,6 +209,8 @@ function LoadingIcon({
         }}
         transition={{ duration: 0.3 }}
         whileHover={isRevealed ? { scale: 1.1 } : {}}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Circular progress (visible while loading) */}
         {!isRevealed && progress > 0 && (
@@ -291,7 +305,7 @@ export function LoadingLegend() {
                   >
                     <TextType
                       text={activeLabel}
-                      typingSpeed={40}
+                      typingSpeed={20}
                       showCursor={true}
                       cursorCharacter="_"
                       loop={false}
@@ -303,7 +317,7 @@ export function LoadingLegend() {
             </div>
 
             {/* Icon row: [Roads] [Trees] [Data [a][b][c][d]] [Buildings] */}
-            <div className="flex items-center gap-4 bg-black/30 backdrop-blur-sm rounded-full px-5 py-3">
+            <div className="flex items-center gap-5 bg-black/30 backdrop-blur-sm rounded-full px-6 py-3">
               {/* Roads */}
               <LoadingIcon
                 id="roads"
@@ -323,7 +337,7 @@ export function LoadingLegend() {
               />
 
               {/* Data group with sub-icons */}
-              <div className="flex items-center gap-2 bg-black/20 rounded-full px-3 py-1.5">
+              <div className="flex items-center gap-3 bg-black/20 rounded-full px-4 py-1.5">
                 <LoadingIcon
                   id="data"
                   icon={Database}

@@ -22,9 +22,10 @@ export interface RoadData {
 
 interface RoadsProps {
   roads: RoadData[];
+  opacity?: number;
 }
 
-export function Roads({ roads }: RoadsProps) {
+export function Roads({ roads, opacity = 1 }: RoadsProps) {
   const { mainRoads, sidewalks } = useMemo(() => {
     const main: RoadData[] = [];
     const sw: RoadData[] = [];
@@ -49,7 +50,7 @@ export function Roads({ roads }: RoadsProps) {
           color={ROAD_COLOR}
           lineWidth={ROAD_WIDTH}
           transparent
-          opacity={0.9}
+          opacity={0.9 * opacity}
         />
       ))}
       {sidewalks.map((road, i) => (
@@ -58,6 +59,8 @@ export function Roads({ roads }: RoadsProps) {
           points={road.path}
           color={SIDEWALK_COLOR}
           lineWidth={SIDEWALK_WIDTH}
+          transparent
+          opacity={opacity}
         />
       ))}
     </group>

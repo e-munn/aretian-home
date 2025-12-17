@@ -16,7 +16,7 @@ export const useSectionContext = () => useContext(SectionContext);
 // Section theme config - background color and mode
 const SECTION_THEME: Record<string, { bg: string; mode: ColorMode }> = {
   aretian: { bg: '#0f0f1a', mode: 'dark' },
-  services: { bg: '#e8f4fc', mode: 'light' },
+  services: { bg: '#1a2a3a', mode: 'dark' },
   process: { bg: '#0f0f1a', mode: 'dark' },
   design: { bg: '#0f0f1a', mode: 'dark' },
   projects: { bg: '#0f0f1a', mode: 'dark' },
@@ -76,13 +76,26 @@ interface SectionProps {
   id: string;
   index: number;
   children: ReactNode;
+  scrollProgress: number; // 0 = fully visible, 1 = scrolled away
+  isActive: boolean;
 }
 
-function Section({ id, children }: SectionProps) {
+function Section({ id, children, scrollProgress, isActive }: SectionProps) {
+  // Calculate blur and opacity based on scroll progress
+  const blur = Math.min(scrollProgress * 12, 12); // Max 12px blur
+  const opacity = 1 - scrollProgress * 0.4; // Fade to 60% opacity
+  const scale = 1 - scrollProgress * 0.05; // Slight scale down
+
   return (
     <section
       id={id}
       className="h-screen w-full relative"
+      style={{
+        filter: scrollProgress > 0 ? `blur(${blur}px)` : 'none',
+        opacity: isActive ? 1 : opacity,
+        transform: `scale(${scale})`,
+        transition: 'filter 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out',
+      }}
     >
       {children}
     </section>
@@ -96,11 +109,12 @@ interface FullPageScrollProps {
   breakHeight?: number;
 }
 
-// Break height constant
-const BREAK_HEIGHT = 80;
+// Break height constant - disabled
+const BREAK_HEIGHT = 0;
 
-export function FullPageScroll({ sections, children, showBreaks = true, breakHeight = BREAK_HEIGHT }: FullPageScrollProps) {
+export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT }: FullPageScrollProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState<number[]>(sections.map(() => 0));
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimating = useRef(false);
   const wheelAccumulator = useRef(0);
@@ -109,6 +123,43 @@ export function FullPageScroll({ sections, children, showBreaks = true, breakHei
   // Calculate total height including breaks
   const sectionHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
   const totalBreakHeight = showBreaks ? breakHeight * (sections.length - 1) : 0;
+
+  // Track scroll progress for blur effect
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateScrollProgress = () => {
+      const scrollTop = container.scrollTop;
+      const viewportHeight = window.innerHeight;
+      const sectionWithBreak = viewportHeight + (showBreaks ? breakHeight : 0);
+
+      const newProgress = sections.map((_, index) => {
+        const sectionStart = index * sectionWithBreak;
+        const sectionEnd = sectionStart + viewportHeight;
+
+        // How much has this section scrolled past the viewport?
+        if (scrollTop >= sectionEnd) {
+          return 1; // Fully scrolled away
+        } else if (scrollTop > sectionStart) {
+          return (scrollTop - sectionStart) / viewportHeight;
+        }
+        return 0;
+      });
+
+      setScrollProgress(newProgress);
+    };
+
+    // Use requestAnimationFrame for smooth updates during scroll animation
+    let rafId: number;
+    const smoothUpdate = () => {
+      updateScrollProgress();
+      rafId = requestAnimationFrame(smoothUpdate);
+    };
+
+    rafId = requestAnimationFrame(smoothUpdate);
+    return () => cancelAnimationFrame(rafId);
+  }, [sections.length, showBreaks, breakHeight]);
 
   // Smooth scroll to section with dramatic easing
   const scrollToSection = useCallback((index: number, updateHash = true) => {
@@ -279,6 +330,8 @@ export function FullPageScroll({ sections, children, showBreaks = true, breakHei
                 <Section
                   id={sectionId}
                   index={index}
+                  scrollProgress={scrollProgress[index] || 0}
+                  isActive={activeIndex === index}
                 >
                   {child}
                 </Section>

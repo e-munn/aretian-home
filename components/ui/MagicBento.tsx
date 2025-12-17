@@ -10,6 +10,8 @@ const MOBILE_BREAKPOINT = 768;
 
 export interface CardData {
   color: string;
+  bgColor?: string;      // Light transparent background
+  titleColor?: string;   // Dark title text color
   title: string;
   description: string;
   label: string;
@@ -341,12 +343,16 @@ const MagicBento = ({
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          transition: transform 0.3s ease;
+          transition: transform 0.3s ease, border-color 0.3s ease;
+          background: transparent;
           border: 1px solid rgba(255, 255, 255, 0.1);
           --glow-x: 50%;
           --glow-y: 50%;
           --glow-intensity: 0;
           --glow-radius: 300px;
+        }
+        .magic-bento-card:hover {
+          border-color: rgba(255, 255, 255, 0.2);
         }
         @media (min-width: 768px) {
           .magic-bento-card {
@@ -376,14 +382,15 @@ const MagicBento = ({
           .magic-bento-card__icon svg { width: 40px; height: 40px; }
         }
         .magic-bento-card__content { margin-top: auto; }
-        .magic-bento-card__title { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; color: rgba(255, 255, 255, 0.95); margin: 0 0 12px 0; line-height: 1; letter-spacing: -0.03em; }
-        .magic-bento-card__description { font-size: 14px; color: rgba(255, 255, 255, 0.5); margin: 0; line-height: 1.5; }
+        .magic-bento-card__title { font-size: 28px !important; font-weight: 700; color: inherit; margin: 0 0 12px 0; line-height: 1; letter-spacing: -0.02em; }
+        .magic-bento-card__description { font-size: 13px; color: rgba(255, 255, 255, 0.6); margin: 0; line-height: 1.5; }
         @media (min-width: 768px) {
-          .magic-bento-card__title { font-size: clamp(3.5rem, 5vw, 5.5rem); margin: 0 0 16px 0; }
-          .magic-bento-card__description { font-size: 16px; }
+          .magic-bento-card__title { font-size: 40px !important; margin: 0 0 16px 0; }
+          .magic-bento-card__description { font-size: 14px; }
         }
         @media (min-width: 1200px) {
-          .magic-bento-card__title { font-size: clamp(4rem, 4.5vw, 6rem); }
+          .magic-bento-card__title { font-size: 52px !important; }
+          .magic-bento-card__description { font-size: 15px; }
         }
         .magic-bento-card--text-autohide .magic-bento-card__content { opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
         .magic-bento-card--text-autohide:hover .magic-bento-card__content { opacity: 1; transform: translateY(0); }
@@ -399,9 +406,9 @@ const MagicBento = ({
           const gridAreas = ['a', 'b', 'c', 'd', 'e', 'f'];
           const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''}`;
           const cardStyle = {
-            backgroundColor: card.color,
             '--glow-color': glowColor,
-            gridArea: gridAreas[index] || 'auto'
+            gridArea: gridAreas[index] || 'auto',
+            backgroundColor: card.bgColor || 'transparent',
           } as React.CSSProperties;
 
           return (
@@ -411,7 +418,7 @@ const MagicBento = ({
                 {card.icon && <div className="magic-bento-card__icon">{card.icon}</div>}
               </div>
               <div className="magic-bento-card__content">
-                <h2 className="magic-bento-card__title">{card.title}</h2>
+                <h2 className="magic-bento-card__title" style={card.titleColor ? { color: card.titleColor } : undefined}>{card.title}</h2>
                 <p className="magic-bento-card__description">{card.description}</p>
               </div>
             </ParticleCard>

@@ -31,12 +31,18 @@ interface LayerState {
   revealed: Record<LayerKey, boolean>;
   // When the reveal sequence started (null if not started)
   startTime: number | null;
+  // Which layers are currently hovered (for highlight effect)
+  hoveredLayers: LayerKey[] | null;
   // Start the reveal sequence
   startReveal: () => void;
   // Check if a layer is revealed
   isRevealed: (layer: LayerKey) => boolean;
   // Get start time
   getStartTime: () => number | null;
+  // Set hovered layers (null = no hover, show all at full opacity)
+  setHoveredLayers: (layers: LayerKey[] | null) => void;
+  // Check if a layer should be highlighted (either no hover or is in hovered list)
+  isHighlighted: (layer: LayerKey) => boolean;
   // Reset all
   reset: () => void;
   // Check if all layers are revealed
@@ -59,6 +65,7 @@ const initialRevealed: Record<LayerKey, boolean> = {
 export const useLayerStore = create<LayerState>((set, get) => ({
   revealed: { ...initialRevealed },
   startTime: null,
+  hoveredLayers: null,
 
   startReveal: () => {
     const now = Date.now();
@@ -82,9 +89,20 @@ export const useLayerStore = create<LayerState>((set, get) => ({
 
   getStartTime: () => get().startTime,
 
+  setHoveredLayers: (layers) => set({ hoveredLayers: layers }),
+
+  isHighlighted: (layer) => {
+    const { hoveredLayers } = get();
+    // If nothing is hovered, everything is highlighted
+    if (hoveredLayers === null) return true;
+    // Otherwise, only hovered layers are highlighted
+    return hoveredLayers.includes(layer);
+  },
+
   reset: () => set({
     revealed: { ...initialRevealed },
     startTime: null,
+    hoveredLayers: null,
   }),
 
   isComplete: () => {

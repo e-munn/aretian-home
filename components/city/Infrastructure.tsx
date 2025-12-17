@@ -277,12 +277,14 @@ interface BikeLanesProps {
   lanes: BikeLaneData[];
   color?: string;
   lineWidth?: number;
+  opacity?: number;
 }
 
 export function BikeLanes({
   lanes,
   color = '#22aa44',
   lineWidth = 2,
+  opacity = 1,
 }: BikeLanesProps) {
   if (lanes.length === 0) return null;
 
@@ -294,6 +296,8 @@ export function BikeLanes({
           points={lane.path}
           color={color}
           lineWidth={lineWidth}
+          transparent
+          opacity={opacity}
         />
       ))}
     </group>
