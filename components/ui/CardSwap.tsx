@@ -1,105 +1,219 @@
 'use client';
 
-import React, { useState, useEffect, Children, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { Children, cloneElement, forwardRef, isValidElement, useEffect, useMemo, useRef, ReactNode, CSSProperties } from 'react';
+import gsap from 'gsap';
+import './CardSwap.css';
 
 interface CardProps {
-  children: ReactNode;
+  customClass?: string;
   className?: string;
+  style?: CSSProperties;
+  onClick?: (e: React.MouseEvent) => void;
+  children?: ReactNode;
 }
 
-export function Card({ children, className = '' }: CardProps) {
-  return (
-    <div className={`w-full h-full rounded-2xl bg-[#0a1628] border border-white/10 p-8 ${className}`}>
-      {children}
-    </div>
-  );
+export const Card = forwardRef<HTMLDivElement, CardProps>(({ customClass, ...rest }, ref) => (
+  <div ref={ref} {...rest} className={`card ${customClass ?? ''} ${rest.className ?? ''}`.trim()} />
+));
+Card.displayName = 'Card';
+
+interface Slot {
+  x: number;
+  y: number;
+  z: number;
+  zIndex: number;
 }
+
+const makeSlot = (i: number, distX: number, distY: number, total: number): Slot => ({
+  x: i * distX,
+  y: -i * distY,
+  z: -i * distX * 1.5,
+  zIndex: total - i
+});
+
+const placeNow = (el: HTMLElement, slot: Slot, skew: number) =>
+  gsap.set(el, {
+    x: slot.x,
+    y: slot.y,
+    z: slot.z,
+    xPercent: -50,
+    yPercent: -50,
+    skewY: skew,
+    transformOrigin: 'center center',
+    zIndex: slot.zIndex,
+    force3D: true
+  });
 
 interface CardSwapProps {
-  children: ReactNode;
+  width?: number;
+  height?: number;
   cardDistance?: number;
   verticalDistance?: number;
   delay?: number;
   pauseOnHover?: boolean;
+  onCardClick?: (index: number) => void;
+  skewAmount?: number;
+  easing?: 'elastic' | 'smooth';
+  children: ReactNode;
 }
 
-export default function CardSwap({
-  children,
+const CardSwap = ({
+  width = 500,
+  height = 400,
   cardDistance = 60,
   verticalDistance = 70,
   delay = 5000,
   pauseOnHover = false,
-}: CardSwapProps) {
-  const cards = Children.toArray(children);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  onCardClick,
+  skewAmount = 6,
+  easing = 'elastic',
+  children
+}: CardSwapProps) => {
+  const config =
+    easing === 'elastic'
+      ? {
+          ease: 'elastic.out(0.6,0.9)',
+          durDrop: 2,
+          durMove: 2,
+          durReturn: 2,
+          promoteOverlap: 0.9,
+          returnDelay: 0.05
+        }
+      : {
+          ease: 'power1.inOut',
+          durDrop: 0.8,
+          durMove: 0.8,
+          durReturn: 0.8,
+          promoteOverlap: 0.45,
+          returnDelay: 0.2
+        };
+
+  const childArr = useMemo(() => Children.toArray(children), [children]);
+  const refs = useMemo(
+    () => childArr.map(() => React.createRef<HTMLDivElement>()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [childArr.length]
+  );
+
+  const order = useRef(Array.from({ length: childArr.length }, (_, i) => i));
+
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  const intervalRef = useRef<number>();
+  const container = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isPaused) return;
-    
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % cards.length);
-    }, delay);
+    const total = refs.length;
+    refs.forEach((r, i) => {
+      if (r.current) {
+        placeNow(r.current, makeSlot(i, cardDistance, verticalDistance, total), skewAmount);
+      }
+    });
 
-    return () => clearInterval(interval);
-  }, [cards.length, delay, isPaused]);
+    const swap = () => {
+      if (order.current.length < 2) return;
 
-  const getCardStyle = (index: number) => {
-    const position = (index - activeIndex + cards.length) % cards.length;
-    
-    // Stack cards with offset
-    const xOffset = position * cardDistance;
-    const yOffset = position * verticalDistance;
-    const scale = 1 - position * 0.05;
-    const zIndex = cards.length - position;
-    const opacity = position === 0 ? 1 : 0.7 - position * 0.2;
+      const [front, ...rest] = order.current;
+      const elFront = refs[front].current;
+      if (!elFront) return;
 
-    return {
-      x: xOffset,
-      y: yOffset,
-      scale,
-      zIndex,
-      opacity: Math.max(0.3, opacity),
+      const tl = gsap.timeline();
+      tlRef.current = tl;
+
+      tl.to(elFront, {
+        y: '+=500',
+        duration: config.durDrop,
+        ease: config.ease
+      });
+
+      tl.addLabel('promote', `-=${config.durDrop * config.promoteOverlap}`);
+      rest.forEach((idx, i) => {
+        const el = refs[idx].current;
+        if (!el) return;
+        const slot = makeSlot(i, cardDistance, verticalDistance, refs.length);
+        tl.set(el, { zIndex: slot.zIndex }, 'promote');
+        tl.to(
+          el,
+          {
+            x: slot.x,
+            y: slot.y,
+            z: slot.z,
+            duration: config.durMove,
+            ease: config.ease
+          },
+          `promote+=${i * 0.15}`
+        );
+      });
+
+      const backSlot = makeSlot(refs.length - 1, cardDistance, verticalDistance, refs.length);
+      tl.addLabel('return', `promote+=${config.durMove * config.returnDelay}`);
+      tl.call(
+        () => {
+          gsap.set(elFront, { zIndex: backSlot.zIndex });
+        },
+        undefined,
+        'return'
+      );
+      tl.to(
+        elFront,
+        {
+          x: backSlot.x,
+          y: backSlot.y,
+          z: backSlot.z,
+          duration: config.durReturn,
+          ease: config.ease
+        },
+        'return'
+      );
+
+      tl.call(() => {
+        order.current = [...rest, front];
+      });
     };
-  };
+
+    swap();
+    intervalRef.current = window.setInterval(swap, delay);
+
+    if (pauseOnHover && container.current) {
+      const node = container.current;
+      const pause = () => {
+        tlRef.current?.pause();
+        clearInterval(intervalRef.current);
+      };
+      const resume = () => {
+        tlRef.current?.play();
+        intervalRef.current = window.setInterval(swap, delay);
+      };
+      node.addEventListener('mouseenter', pause);
+      node.addEventListener('mouseleave', resume);
+      return () => {
+        node.removeEventListener('mouseenter', pause);
+        node.removeEventListener('mouseleave', resume);
+        clearInterval(intervalRef.current);
+      };
+    }
+    return () => clearInterval(intervalRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardDistance, verticalDistance, delay, pauseOnHover, skewAmount, easing]);
+
+  const rendered = childArr.map((child, i) =>
+    isValidElement(child)
+      ? cloneElement(child as React.ReactElement<CardProps>, {
+          key: i,
+          ref: refs[i],
+          style: { width, height, ...((child as React.ReactElement<CardProps>).props.style ?? {}) },
+          onClick: (e: React.MouseEvent) => {
+            (child as React.ReactElement<CardProps>).props.onClick?.(e);
+            onCardClick?.(i);
+          }
+        })
+      : child
+  );
 
   return (
-    <div
-      className="relative w-full h-full flex items-center justify-center"
-      onMouseEnter={() => pauseOnHover && setIsPaused(true)}
-      onMouseLeave={() => pauseOnHover && setIsPaused(false)}
-    >
-      <div className="relative" style={{ width: '500px', height: '350px' }}>
-        <AnimatePresence>
-          {cards.map((card, index) => {
-            const style = getCardStyle(index);
-            return (
-              <motion.div
-                key={index}
-                className="absolute inset-0 cursor-pointer"
-                initial={false}
-                animate={{
-                  x: style.x,
-                  y: style.y,
-                  scale: style.scale,
-                  opacity: style.opacity,
-                  zIndex: style.zIndex,
-                }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 300,
-                  damping: 30,
-                }}
-                onClick={() => setActiveIndex(index)}
-                style={{ zIndex: style.zIndex }}
-              >
-                {card}
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </div>
+    <div ref={container} className="card-swap-container" style={{ width, height }}>
+      {rendered}
     </div>
   );
-}
+};
+
+export default CardSwap;

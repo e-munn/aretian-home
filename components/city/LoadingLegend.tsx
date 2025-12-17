@@ -204,7 +204,6 @@ function LoadingIcon({
           height: dimensions,
           backgroundColor: `${color}20`,
         }}
-        title={label}
         animate={{
           opacity: isRevealed ? 1 : 0.5 + progress * 0.4,
           scale: isRevealed ? 1 : 0.92 + progress * 0.08,
@@ -318,8 +317,8 @@ export function LoadingLegend() {
               </AnimatePresence>
             </div>
 
-            {/* Icon row: [Roads] [Trees] [Data [a][b][c][d]] [Buildings] */}
-            <div className="flex items-center gap-5 bg-black/30 backdrop-blur-sm rounded-full px-6 py-3">
+            {/* Icon row: evenly spaced [Roads] [Trees] [Data+subs] [Buildings] */}
+            <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm rounded-full px-5 py-3" style={{ minWidth: 360 }}>
               {/* Roads */}
               <LoadingIcon
                 id="roads"
@@ -338,8 +337,8 @@ export function LoadingLegend() {
                 layers={['trees']}
               />
 
-              {/* Data group with sub-icons */}
-              <div className="flex items-center gap-3 bg-black/20 rounded-full px-4 py-1.5">
+              {/* Data group - pill wrapping main icon + sub-icons */}
+              <div className="flex items-center gap-2 bg-white/5 rounded-full pl-1 pr-2 py-1">
                 <LoadingIcon
                   id="data"
                   icon={Database}
@@ -347,17 +346,19 @@ export function LoadingLegend() {
                   label="Data"
                   layers={['parking', 'bikeLanes', 'busStops', 'bicingStations', 'trafficViolations', 'flowParticles']}
                 />
-                {DATA_SUB_ICONS.map(({ id, icon, color, label, layers }) => (
-                  <LoadingIcon
-                    key={id}
-                    id={id}
-                    icon={icon}
-                    color={color}
-                    label={label}
-                    size="sm"
-                    layers={layers}
-                  />
-                ))}
+                <div className="flex items-center gap-1.5">
+                  {DATA_SUB_ICONS.map(({ id, icon, color, label, layers }) => (
+                    <LoadingIcon
+                      key={id}
+                      id={id}
+                      icon={icon}
+                      color={color}
+                      label={label}
+                      size="sm"
+                      layers={layers}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Buildings */}

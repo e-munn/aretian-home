@@ -60,36 +60,50 @@ export function ProjectsSection() {
           delay={5000}
           pauseOnHover={true}
         >
-          {PROJECTS.map((project) => (
-            <Card key={project.name}>
-              <div className="flex flex-col h-full justify-between">
-                <div>
-                  <div className="flex gap-2 mb-4">
-                    {project.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs font-medium text-white/50 bg-white/10 px-2 py-1 rounded"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+          {PROJECTS.map((project, index) => {
+            const colors = ['0, 194, 23', '59, 130, 246', '139, 92, 246', '245, 158, 11'];
+            const glowColor = colors[index % colors.length];
+            return (
+              <Card key={project.name} glowColor={glowColor}>
+                <div className="flex flex-col h-full justify-between">
+                  {/* Header with label */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-2">
+                      {project.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/50"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3">{project.name}</h3>
-                  <p className="text-white/60 leading-relaxed text-sm">{project.description}</p>
+
+                  {/* Content - title and description */}
+                  <div className="mt-auto">
+                    <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight tracking-tight">
+                      {project.name}
+                    </h3>
+                    <p className="text-white/50 leading-relaxed text-sm mb-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      {project.description}
+                    </p>
+                    <a
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-[#00C217] hover:text-[#00e01b] transition-colors opacity-0 group-hover:opacity-100 duration-300"
+                    >
+                      View case study
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
-                <div className="mt-6">
-                  <a
-                    href={project.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#00C217] hover:text-[#00e01b] transition-colors"
-                  >
-                    View case study →
-                  </a>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </CardSwap>
       </div>
     </section>
