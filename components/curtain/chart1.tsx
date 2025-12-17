@@ -1,30 +1,5 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import _ from 'lodash';
-import {
-  BASEMAP,
-  vectorTableSource,
-  fetchMap,
-  vectorQuerySource,
-  VectorTileLayer,
-  HeatmapTileLayer,
-  quadbinTableSource,
-  quadbinQuerySource,
-  QuadbinTileLayer,
-  colorBins,
-} from '@deck.gl/carto';
-import * as d3 from 'd3';
-import {
-  LightingEffect,
-  LinearInterpolator,
-  _SunLight as SunLight,
-  OrbitView,
-  PointLight,
-  PostProcessEffect,
-  FlyToInterpolator,
-  MapViewState,
-} from '@deck.gl/core';
-import { useInterval } from 'usehooks-ts';
+"use client";
+import React, { useEffect } from 'react';
 import {
   AreaChart,
   Area,

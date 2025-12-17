@@ -22,15 +22,6 @@ export const COLORS = {
   white: '#ffffff',
 };
 
-// Barcelona Eixample center (must match CityScene)
-const CENTER = { lat: 41.39086, lon: 2.15644 };
-
-function project(lon: number, lat: number): [number, number, number] {
-  const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
-  const y = (lat - CENTER.lat) * 111000;
-  return [x, y, 0];
-}
-
 // ============ BUS STOP MARKERS ============
 // Tall pole with bus shelter icon at top
 
@@ -88,20 +79,20 @@ export function BusStopMarkers({
 
   return (
     <>
-      {/* Poles - thicker */}
-      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]}>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 6]} />
+      {/* Poles */}
+      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
         <meshBasicMaterial color={poleColor} />
       </instancedMesh>
 
-      {/* Bus body icon - LARGE */}
-      <instancedMesh ref={iconRef} args={[undefined, undefined, positions.length]}>
+      {/* Bus body icon */}
+      <instancedMesh ref={iconRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <boxGeometry args={[12, 6, 7]} />
         <meshBasicMaterial color={iconColor} />
       </instancedMesh>
 
-      {/* Bus roof stripe - LARGE */}
-      <instancedMesh ref={roofRef} args={[undefined, undefined, positions.length]}>
+      {/* Bus roof stripe */}
+      <instancedMesh ref={roofRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <boxGeometry args={[13, 7, 1.5]} />
         <meshBasicMaterial color={COLORS.white} />
       </instancedMesh>
@@ -129,9 +120,9 @@ export function BicingMarkers({
   const wheelRef = useRef<THREE.InstancedMesh>(null);
   const hubRef = useRef<THREE.InstancedMesh>(null);
 
-  // Torus geometry for bike wheel - LARGE
+  // Torus geometry for bike wheel - simplified
   const wheelGeometry = useMemo(() => {
-    return new THREE.TorusGeometry(6, 1.2, 8, 16);
+    return new THREE.TorusGeometry(6, 1.2, 6, 12);
   }, []);
 
   useEffect(() => {
@@ -171,20 +162,20 @@ export function BicingMarkers({
 
   return (
     <>
-      {/* Poles - thicker */}
-      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]}>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 6]} />
+      {/* Poles */}
+      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
         <meshBasicMaterial color={poleColor} />
       </instancedMesh>
 
       {/* Bike wheel */}
-      <instancedMesh ref={wheelRef} args={[wheelGeometry, undefined, positions.length]}>
+      <instancedMesh ref={wheelRef} args={[wheelGeometry, undefined, positions.length]} frustumCulled>
         <meshBasicMaterial color={iconColor} />
       </instancedMesh>
 
-      {/* Wheel hub - LARGE */}
-      <instancedMesh ref={hubRef} args={[undefined, undefined, positions.length]}>
-        <circleGeometry args={[2.5, 8]} />
+      {/* Wheel hub */}
+      <instancedMesh ref={hubRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <circleGeometry args={[2.5, 6]} />
         <meshBasicMaterial color={COLORS.white} />
       </instancedMesh>
     </>
@@ -259,19 +250,19 @@ export function TrafficViolationMarkers({
 
   return (
     <>
-      {/* Poles - thicker */}
-      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]}>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 6]} />
+      {/* Poles */}
+      <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
         <meshBasicMaterial color={poleColor} />
       </instancedMesh>
 
       {/* Warning diamond */}
-      <instancedMesh ref={diamondRef} args={[diamondGeometry, undefined, positions.length]}>
+      <instancedMesh ref={diamondRef} args={[diamondGeometry, undefined, positions.length]} frustumCulled>
         <meshBasicMaterial color={iconColor} side={THREE.DoubleSide} />
       </instancedMesh>
 
-      {/* Exclamation mark - LARGE */}
-      <instancedMesh ref={exclamationRef} args={[undefined, undefined, positions.length]}>
+      {/* Exclamation mark */}
+      <instancedMesh ref={exclamationRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <boxGeometry args={[1.5, 1.5, 5]} />
         <meshBasicMaterial color={COLORS.slate700} />
       </instancedMesh>

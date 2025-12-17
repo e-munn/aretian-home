@@ -2,14 +2,37 @@
 
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-
-// Barcelona Eixample center (must match CityScene)
-const CENTER = { lat: 41.39086, lon: 2.15644 };
+import { CENTER, BOUNDS_POLYGON, project } from './data';
 
 function projectToScene(lon: number, lat: number): [number, number] {
   const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
   const y = (lat - CENTER.lat) * 111000;
   return [x, y];
+}
+
+// Project perimeter to scene coordinates (cached)
+let projectedPerimeter: [number, number][] | null = null;
+function getProjectedPerimeter(): [number, number][] {
+  if (!projectedPerimeter) {
+    projectedPerimeter = BOUNDS_POLYGON.map(p => {
+      const [x, y] = project(p.lon, p.lat);
+      return [x, y] as [number, number];
+    });
+  }
+  return projectedPerimeter;
+}
+
+// Point-in-polygon test (2D)
+function pointInPolygon2D(x: number, y: number, polygon: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
 // Building data structure
@@ -20,10 +43,10 @@ export interface BuildingData {
   numFloors?: number;
 }
 
-// Fetch buildings from cached OSM data
+// Fetch buildings from cached OSM data (custom perimeter)
 export async function fetchOvertureBuildings(): Promise<BuildingData[]> {
   try {
-    const response = await fetch('/data/perimeter/barcelona-buildings-1200m.json');
+    const response = await fetch('/data/perimeter/barcelona-buildings-custom.json');
     if (!response.ok) {
       console.warn('No building data found');
       return [];
@@ -40,6 +63,7 @@ export async function fetchOvertureBuildings(): Promise<BuildingData[]> {
 function parseOSMBuildings(data: any): BuildingData[] {
   const buildings: BuildingData[] = [];
   const nodes: Record<number, { lon: number; lat: number }> = {};
+  const polygon = getProjectedPerimeter();
 
   // First pass: collect all nodes
   for (const el of data.elements) {
@@ -72,6 +96,9 @@ function parseOSMBuildings(data: any): BuildingData[] {
     }
     cx /= footprint.length;
     cy /= footprint.length;
+
+    // Skip buildings whose centroid is outside the polygon boundary
+    if (!pointInPolygon2D(cx, cy, polygon)) continue;
 
     // Get height from tags or estimate
     let height = parseFloat(el.tags.height) || 0;

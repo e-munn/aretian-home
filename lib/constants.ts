@@ -4,7 +4,7 @@ export const MAP_INITIAL_VIEWWSTATES = [
         height: 300,
         latitude: 41.4014348664497,
         longitude: 2.175433610001355,
-        zoom: 12.318041350668096,
+        zoom: 15.5,
         bearing: -74.20529179425233,
         pitch: 60,
         altitude: 1.5,

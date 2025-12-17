@@ -1,11 +1,11 @@
-'use client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Shield, Users, BarChart, Lock } from 'lucide-react';
-import Link from 'next/link';
-import Three from '@/components/curtain/three';
-import CurtainMap from '@/components/curtain/map';
-import Chart1 from './chart1';
+'use client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Shield, Users, BarChart, Lock } from 'lucide-react'
+import Link from 'next/link'
+import Three from '@/components/curtain/three'
+import CurtainMap from '@/components/curtain/map'
+import Chart1 from './chart1'
 
 export default function Curtain() {
   return (
@@ -29,9 +29,8 @@ export default function Curtain() {
                   }}
                   className='py-8 font-semibold text-5xl bg-gradient-to-r from-blue-950 to-slate-900 text-3xl font-extrabold text-transparent bg-clip-text'
                 >
-                  A new scientific theory of cities to empower the next
-                  generation of policy makers, <span>private firms,</span> and
-                  city planners.
+                  A new scientific theory of cities to empower the next generation of policy makers,{' '}
+                  <span>private firms,</span> and city planners.
                 </div>
               </div>
             </div>
@@ -59,5 +58,5 @@ export default function Curtain() {
         </section> */}
       </div>
     </>
-  );
+  )
 }

@@ -10,15 +10,15 @@
   --muted: #DBDBDB;
 }
 
-body {
+html, body {
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-geo), sans-serif;
-}
-
-html {
-  background: transparent;
   scroll-behavior: smooth;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 ::selection {

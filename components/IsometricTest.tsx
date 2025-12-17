@@ -186,7 +186,7 @@ function DotFloor({ gridExtent = 40, dotSpacing = 0.5 }: { gridExtent?: number; 
   );
 }
 
-// Road segment rendered as extruded shape
+// Road segment rendered as flat 2D shape
 function RoadSegment({ start, end, width = 0.4, color = '#667788' }: { start: [number, number]; end: [number, number]; width?: number; color?: string }) {
   const geometry = useMemo(() => {
     const dx = end[0] - start[0];
@@ -197,7 +197,7 @@ function RoadSegment({ start, end, width = 0.4, color = '#667788' }: { start: [n
 
     const angle = Math.atan2(dz, dx);
 
-    // Create road shape
+    // Create flat road shape
     const shape = new THREE.Shape();
     const hw = width / 2;
     shape.moveTo(-hw, 0);
@@ -206,17 +206,12 @@ function RoadSegment({ start, end, width = 0.4, color = '#667788' }: { start: [n
     shape.lineTo(hw, 0);
     shape.closePath();
 
-    const extrudeSettings = {
-      depth: 0.05,
-      bevelEnabled: false,
-    };
+    const geo = new THREE.ShapeGeometry(shape);
 
-    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-    // Rotate and position
+    // Rotate to lie flat on XZ plane, then rotate to correct angle
     geo.rotateX(-Math.PI / 2);
     geo.rotateY(-angle);
-    geo.translate(start[0], 0, start[1]);
+    geo.translate(start[0], 0.01, start[1]);
 
     return geo;
   }, [start, end, width]);
@@ -225,7 +220,7 @@ function RoadSegment({ start, end, width = 0.4, color = '#667788' }: { start: [n
 
   return (
     <mesh geometry={geometry}>
-      <meshStandardMaterial color={color} />
+      <meshBasicMaterial color={color} />
     </mesh>
   );
 }
@@ -258,13 +253,14 @@ function OriginalRoadLine({ path, color = '#ff4444' }: { path: [number, number][
   );
 }
 
-// Camera setup for isometric view
+// Camera setup for top-down 2D view
 function CameraSetup() {
   const { camera } = useThree();
 
   useLayoutEffect(() => {
     if (camera instanceof THREE.OrthographicCamera) {
-      camera.zoom = 45;
+      camera.zoom = 40;
+      camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
     }
   }, [camera]);
@@ -272,38 +268,36 @@ function CameraSetup() {
   return null;
 }
 
-// Main scene content
+// Main scene content - 2D top-down view
 function Scene({ roads, showOriginal = true }: { roads: RoadData[]; showOriginal?: boolean }) {
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 20, 10]} intensity={0.8} castShadow />
-      <pointLight position={[-5, 10, -5]} intensity={0.2} color="#00C217" />
+      {/* Simple lighting for 2D */}
+      <ambientLight intensity={1} />
 
       {/* Ground plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-        <planeGeometry args={[50, 50]} />
-        <meshStandardMaterial color="#010029" />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial color="#010029" />
       </mesh>
 
       {/* Dot grid */}
-      <DotFloor gridExtent={12} dotSpacing={0.4} />
+      <DotFloor gridExtent={15} dotSpacing={0.5} />
 
-      {/* Original roads (red lines for debugging) */}
+      {/* Original roads (red/orange for debugging) */}
       {showOriginal && roads.map((road, i) => (
-        <OriginalRoadLine key={`orig-${i}`} path={road.originalPath} color="#ff4444" />
+        <Road key={`orig-${i}`} path={road.originalPath} width={road.width * 0.5} color="#ff6644" />
       ))}
 
-      {/* Snapped roads (gray extruded) */}
+      {/* Snapped roads (blue-gray) */}
       {roads.map((road, i) => (
-        <Road key={`snap-${i}`} path={road.snappedPath} width={road.width} color="#556677" />
+        <Road key={`snap-${i}`} path={road.snappedPath} width={road.width} color="#4466aa" />
       ))}
 
       {/* Camera setup */}
       <CameraSetup />
 
-      {/* Controls - pan only, no rotation */}
+      {/* Controls for 2D pan/zoom */}
       <OrbitControls
         enableRotate={false}
         enableZoom={true}
@@ -313,8 +307,8 @@ function Scene({ roads, showOriginal = true }: { roads: RoadData[]; showOriginal
           MIDDLE: THREE.MOUSE.DOLLY,
           RIGHT: THREE.MOUSE.PAN,
         }}
-        minZoom={20}
-        maxZoom={120}
+        minZoom={15}
+        maxZoom={150}
       />
     </>
   );
@@ -345,10 +339,11 @@ export default function IsometricTest() {
       <Canvas
         orthographic
         camera={{
-          position: [20, 20, 20],
-          zoom: 45,
+          position: [0, 50, 0], // Top-down view
+          zoom: 40,
           near: 0.1,
           far: 1000,
+          up: [0, 0, -1], // Z is "up" in 2D view
         }}
         gl={{ antialias: true }}
         style={{ background: '#010029' }}

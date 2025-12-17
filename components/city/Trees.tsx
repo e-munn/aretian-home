@@ -2,20 +2,12 @@
 
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { CENTER, project } from './data';
 
-// Barcelona Eixample center (must match CityScene)
-const CENTER = { lat: 41.39086, lon: 2.15644 };
-
-function project(lon: number, lat: number): [number, number, number] {
-  const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
-  const y = (lat - CENTER.lat) * 111000;
-  return [x, y, 0];
-}
-
-// Fetch trees from pre-filtered Barcelona Open Data (5710 street trees)
+// Fetch trees from pre-filtered Barcelona Open Data (custom perimeter)
 export async function fetchOSMTrees(): Promise<[number, number, number][]> {
   try {
-    const response = await fetch('/data/perimeter/barcelona-trees-1200m.json');
+    const response = await fetch('/data/perimeter/barcelona-trees-custom.json');
     if (!response.ok) throw new Error('Failed to load tree data');
 
     const trees = await response.json();
@@ -250,12 +242,12 @@ export function InstancedPalmTrees({
 
   return (
     <>
-      <instancedMesh ref={trunkRef} args={[undefined, undefined, positions.length]}>
-        <cylinderGeometry args={[PALM_TRUNK_RADIUS * 0.8, PALM_TRUNK_RADIUS, PALM_TRUNK_HEIGHT, 6]} />
+      <instancedMesh ref={trunkRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <cylinderGeometry args={[PALM_TRUNK_RADIUS * 0.8, PALM_TRUNK_RADIUS, PALM_TRUNK_HEIGHT, 4]} />
         <meshBasicMaterial color={trunkColor} transparent opacity={0.85} />
       </instancedMesh>
 
-      <instancedMesh ref={foliageRef} args={[crownGeometry, undefined, positions.length]}>
+      <instancedMesh ref={foliageRef} args={[crownGeometry, undefined, positions.length]} frustumCulled>
         <meshBasicMaterial color={foliageColor} transparent opacity={0.7} />
       </instancedMesh>
     </>

@@ -24,6 +24,7 @@ import {
   OrbitControls,
   Outlines,
   Environment,
+  OrthographicCamera,
 } from '@react-three/drei';
 import _ from 'lodash';
 import { Button } from '../ui/button';
@@ -65,7 +66,15 @@ const Model = (props: any) => {
 
 const Three: React.FC = () => {
   return (
-    <Canvas shadows camera={{ position: [2, 10, 0], fov: 80 }}>
+    <Canvas shadows>
+      {/* Isometric camera - positioned at equal angles on X and Z */}
+      <OrthographicCamera
+        makeDefault
+        zoom={80}
+        position={[10, 10, 10]}
+        near={0.1}
+        far={1000}
+      />
       <ambientLight intensity={Math.PI / 8} />
       {/* <spotLight intensity={Math.PI} decay={0} angle={0.5} castShadow position={[5, 2.5, 5]} shadow-mapSize={128} /> */}
       <Model position={[0, 0, 0]} rotation={[0, 0.5, 0.15]} />

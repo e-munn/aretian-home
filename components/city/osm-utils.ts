@@ -1,14 +1,11 @@
 // OSM data fetching utilities for Barcelona Eixample
+import { CENTER, project } from './data';
 
-// Barcelona Eixample center
-export const CENTER = { lat: 41.39086, lon: 2.15644 };
+// Re-export for backwards compatibility
+export { CENTER };
 
-// Project lat/lon to scene coordinates (meters from center)
-export function projectToScene(lon: number, lat: number): [number, number, number] {
-  const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
-  const y = (lat - CENTER.lat) * 111000;
-  return [x, y, 0];
-}
+// Alias project function
+export const projectToScene = project;
 
 // Generate bounding box string for Overpass API
 export function getBBox(halfSizeKm: number): string {

@@ -3,14 +3,36 @@
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
+import { project } from './data';
 
-// Barcelona Eixample center (must match CityScene)
-const CENTER = { lat: 41.39086, lon: 2.15644 };
+// Custom perimeter polygon for filtering
+let cachedPerimeter: { lat: number; lon: number }[] | null = null;
 
-function project(lon: number, lat: number): [number, number, number] {
-  const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);
-  const y = (lat - CENTER.lat) * 111000;
-  return [x, y, 0];
+async function getPerimeter(): Promise<{ lat: number; lon: number }[]> {
+  if (cachedPerimeter) return cachedPerimeter;
+  try {
+    const response = await fetch('/data/perimeter/custom-perimeter-shrunk.json');
+    if (response.ok) {
+      cachedPerimeter = await response.json();
+      return cachedPerimeter!;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function pointInPolygon(lat: number, lon: number, polygon: { lat: number; lon: number }[]): boolean {
+  if (polygon.length < 3) return true; // No polygon = allow all
+  let inside = false;
+  let j = polygon.length - 1;
+  for (let i = 0; i < polygon.length; i++) {
+    if ((polygon[i].lat > lat) !== (polygon[j].lat > lat) &&
+        lon < (polygon[j].lon - polygon[i].lon) * (lat - polygon[i].lat) /
+              (polygon[j].lat - polygon[i].lat) + polygon[i].lon) {
+      inside = !inside;
+    }
+    j = i;
+  }
+  return inside;
 }
 
 // ============ BUS STOPS ============
@@ -23,14 +45,12 @@ export interface BusStopData {
 }
 
 export async function fetchBusStops(): Promise<BusStopData[]> {
-  const halfSize = 0.008;
-  const minLat = CENTER.lat - halfSize;
-  const maxLat = CENTER.lat + halfSize;
-  const minLon = CENTER.lon - halfSize;
-  const maxLon = CENTER.lon + halfSize;
-
   try {
-    const response = await fetch('/data/barcelona/bus-stops.json');
+    const [response, perimeter] = await Promise.all([
+      fetch('/data/barcelona/bus-stops.json'),
+      getPerimeter()
+    ]);
+
     if (!response.ok) {
       console.warn('Bus stops data not found');
       return [];
@@ -45,9 +65,7 @@ export async function fetchBusStops(): Promise<BusStopData[]> {
       .filter((r: any) => {
         const lat = parseFloat(r.LATITUD);
         const lon = parseFloat(r.LONGITUD);
-        return lat && lon &&
-          lat >= minLat && lat <= maxLat &&
-          lon >= minLon && lon <= maxLon;
+        return lat && lon && pointInPolygon(lat, lon, perimeter);
       })
       .map((r: any) => ({
         position: project(parseFloat(r.LONGITUD), parseFloat(r.LATITUD)),
@@ -137,14 +155,12 @@ export interface ParkingZoneData {
 }
 
 export async function fetchParkingZones(): Promise<ParkingZoneData[]> {
-  const halfSize = 0.008;
-  const minLat = CENTER.lat - halfSize;
-  const maxLat = CENTER.lat + halfSize;
-  const minLon = CENTER.lon - halfSize;
-  const maxLon = CENTER.lon + halfSize;
-
   try {
-    const response = await fetch('/data/barcelona/parking-zones.json');
+    const [response, perimeter] = await Promise.all([
+      fetch('/data/barcelona/parking-zones.json'),
+      getPerimeter()
+    ]);
+
     if (!response.ok) {
       console.warn('Parking zones data not found');
       return [];
@@ -159,9 +175,12 @@ export async function fetchParkingZones(): Promise<ParkingZoneData[]> {
       .filter((r: any) => {
         const latI = parseFloat(r.LATITUD_I);
         const lonI = parseFloat(r.LONGITUD_I);
-        return latI && lonI &&
-          latI >= minLat && latI <= maxLat &&
-          lonI >= minLon && lonI <= maxLon;
+        const latF = parseFloat(r.LATITUD_F);
+        const lonF = parseFloat(r.LONGITUD_F);
+        // Both endpoints must be inside perimeter
+        return latI && lonI && latF && lonF &&
+          pointInPolygon(latI, lonI, perimeter) &&
+          pointInPolygon(latF, lonF, perimeter);
       })
       .map((r: any) => ({
         startPos: project(parseFloat(r.LONGITUD_I), parseFloat(r.LATITUD_I)),
@@ -226,22 +245,18 @@ export interface BikeLaneData {
 }
 
 export async function fetchBikeLanes(): Promise<BikeLaneData[]> {
-  // Bike lanes data not yet available locally
-  // To enable: download GeoJSON and save to /data/barcelona/bike-lanes.geojson
   try {
-    const response = await fetch('/data/barcelona/bike-lanes.geojson');
+    const [response, perimeter] = await Promise.all([
+      fetch('/data/barcelona/bike-lanes.geojson'),
+      getPerimeter()
+    ]);
+
     if (!response.ok) {
       return []; // File not available yet
     }
 
     const geojson = await response.json();
     if (!geojson.features) return [];
-
-    const halfSize = 0.008;
-    const minLat = CENTER.lat - halfSize;
-    const maxLat = CENTER.lat + halfSize;
-    const minLon = CENTER.lon - halfSize;
-    const maxLon = CENTER.lon + halfSize;
 
     const lanes: BikeLaneData[] = [];
 
@@ -258,10 +273,9 @@ export async function fetchBikeLanes(): Promise<BikeLaneData[]> {
         continue;
       }
 
+      // Filter to only points inside perimeter
       const path: [number, number, number][] = coordinates
-        .filter(([lon, lat]) =>
-          lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon
-        )
+        .filter(([lon, lat]) => pointInPolygon(lat, lon, perimeter))
         .map(([lon, lat]) => project(lon, lat));
 
       if (path.length >= 2) {
@@ -314,14 +328,12 @@ export interface BicingStationData {
 }
 
 export async function fetchBicingStations(): Promise<BicingStationData[]> {
-  const halfSize = 0.008;
-  const minLat = CENTER.lat - halfSize;
-  const maxLat = CENTER.lat + halfSize;
-  const minLon = CENTER.lon - halfSize;
-  const maxLon = CENTER.lon + halfSize;
-
   try {
-    const response = await fetch('/data/barcelona/bicing-stations.json');
+    const [response, perimeter] = await Promise.all([
+      fetch('/data/barcelona/bicing-stations.json'),
+      getPerimeter()
+    ]);
+
     if (!response.ok) {
       console.warn('Bicing stations data not found');
       return [];
@@ -336,9 +348,7 @@ export async function fetchBicingStations(): Promise<BicingStationData[]> {
       .filter((s: any) => {
         const lat = s.latitude;
         const lon = s.longitude;
-        return lat && lon &&
-          lat >= minLat && lat <= maxLat &&
-          lon >= minLon && lon <= maxLon;
+        return lat && lon && pointInPolygon(lat, lon, perimeter);
       })
       .map((s: any) => ({
         position: project(s.longitude, s.latitude),
@@ -428,14 +438,12 @@ export interface TrafficViolationData {
 }
 
 export async function fetchTrafficViolations(): Promise<TrafficViolationData[]> {
-  const halfSize = 0.008;
-  const minLat = CENTER.lat - halfSize;
-  const maxLat = CENTER.lat + halfSize;
-  const minLon = CENTER.lon - halfSize;
-  const maxLon = CENTER.lon + halfSize;
-
   try {
-    const response = await fetch('/data/barcelona/traffic-violations.json');
+    const [response, perimeter] = await Promise.all([
+      fetch('/data/barcelona/traffic-violations.json'),
+      getPerimeter()
+    ]);
+
     if (!response.ok) {
       console.warn('Traffic violations data not found');
       return [];
@@ -450,9 +458,7 @@ export async function fetchTrafficViolations(): Promise<TrafficViolationData[]> 
       .filter((r: any) => {
         const lat = parseFloat(r.Latitud_WGS84);
         const lon = parseFloat(r.Longitud_WGS84);
-        return lat && lon &&
-          lat >= minLat && lat <= maxLat &&
-          lon >= minLon && lon <= maxLon;
+        return lat && lon && pointInPolygon(lat, lon, perimeter);
       })
       .map((r: any) => ({
         position: project(parseFloat(r.Longitud_WGS84), parseFloat(r.Latitud_WGS84)),
