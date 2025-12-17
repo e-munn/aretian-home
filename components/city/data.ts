@@ -131,6 +131,106 @@ export async function fetchOSMData() {
   return response.json();
 }
 
+// ============ RADIUS-BASED FILTERING ============
+// All data is projected to scene coordinates (centered at 0,0)
+// These functions filter by distance from origin
+
+// Check if a point is within radius (in scene/meter units)
+export function isWithinRadius(x: number, y: number, radius: number): boolean {
+  return x * x + y * y <= radius * radius;
+}
+
+// Filter point array by radius
+export function filterPointsByRadius(
+  points: [number, number, number][],
+  radius: number
+): [number, number, number][] {
+  return points.filter(([x, y]) => isWithinRadius(x, y, radius));
+}
+
+// Clip a path segment to a circular boundary
+// Returns array of clipped segments (a path crossing the boundary becomes multiple segments)
+function clipPathToRadius(
+  path: [number, number, number][],
+  radius: number
+): [number, number, number][][] {
+  if (path.length < 2) return [];
+
+  const segments: [number, number, number][][] = [];
+  let currentSegment: [number, number, number][] = [];
+  const radiusSq = radius * radius;
+
+  for (let i = 0; i < path.length; i++) {
+    const [x, y, z] = path[i];
+    const distSq = x * x + y * y;
+    const isInside = distSq <= radiusSq;
+
+    if (isInside) {
+      // If entering from outside, find intersection
+      if (currentSegment.length === 0 && i > 0) {
+        const [px, py, pz] = path[i - 1];
+        const prevDistSq = px * px + py * py;
+        if (prevDistSq > radiusSq) {
+          const intersection = lineCircleIntersection(px, py, x, y, radius);
+          if (intersection) {
+            currentSegment.push([intersection[0], intersection[1], (z + pz) / 2]);
+          }
+        }
+      }
+      currentSegment.push([x, y, z]);
+    } else {
+      // Exiting - find intersection and close segment
+      if (currentSegment.length > 0) {
+        const last = currentSegment[currentSegment.length - 1];
+        const intersection = lineCircleIntersection(last[0], last[1], x, y, radius);
+        if (intersection) {
+          currentSegment.push([intersection[0], intersection[1], (last[2] + z) / 2]);
+        }
+        if (currentSegment.length >= 2) {
+          segments.push(currentSegment);
+        }
+        currentSegment = [];
+      }
+    }
+  }
+
+  if (currentSegment.length >= 2) {
+    segments.push(currentSegment);
+  }
+
+  return segments;
+}
+
+// Find intersection of line segment with circle
+function lineCircleIntersection(
+  x1: number, y1: number,
+  x2: number, y2: number,
+  radius: number
+): [number, number] | null {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const a = dx * dx + dy * dy;
+  const b = 2 * (x1 * dx + y1 * dy);
+  const c = x1 * x1 + y1 * y1 - radius * radius;
+  const discriminant = b * b - 4 * a * c;
+
+  if (discriminant < 0) return null;
+
+  const sqrtD = Math.sqrt(discriminant);
+  // We want the intersection point along the segment (0 <= t <= 1)
+  const t1 = (-b - sqrtD) / (2 * a);
+  const t2 = (-b + sqrtD) / (2 * a);
+
+  // Pick the t that's in [0,1] and closest to the inside point
+  let t = -1;
+  if (t1 >= 0 && t1 <= 1) t = t1;
+  if (t2 >= 0 && t2 <= 1 && (t < 0 || t2 < t)) t = t2;
+
+  if (t < 0) return null;
+
+  return [x1 + t * dx, y1 + t * dy];
+}
+
 // Parse roads from OSM data (with polygon clipping)
 export function parseRoads(data: any) {
   const nodes: Record<number, { lon: number; lat: number }> = {};
@@ -177,4 +277,31 @@ export function parseRoads(data: any) {
   }
 
   return roads;
+}
+
+// Road type for filtering
+export interface RoadSegment {
+  path: [number, number, number][];
+  type: string;
+  width: number;
+}
+
+// Filter roads by radius - clips paths at boundary
+export function filterRoadsByRadius(roads: RoadSegment[], radius: number): RoadSegment[] {
+  const filtered: RoadSegment[] = [];
+
+  for (const road of roads) {
+    const clippedSegments = clipPathToRadius(road.path, radius);
+    for (const segment of clippedSegments) {
+      if (segment.length >= 2) {
+        filtered.push({
+          path: segment,
+          type: road.type,
+          width: road.width,
+        });
+      }
+    }
+  }
+
+  return filtered;
 }

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, ReactNode, createContext, use
 import { motion, AnimatePresence } from 'framer-motion';
 import { SideNav, NavSection } from './SideNav';
 import { SectionBreak } from '@/components/layout/SectionBreak';
+import { usePaletteStore } from '@/stores/paletteStore';
 
 // Context to share active section info with children
 type ColorMode = 'dark' | 'light';
@@ -13,9 +14,8 @@ const SectionContext = createContext<{ activeIndex: number; colorMode: ColorMode
 });
 export const useSectionContext = () => useContext(SectionContext);
 
-// Section theme config - background color and mode
+// Section theme config - background color and mode (non-aretian sections)
 const SECTION_THEME: Record<string, { bg: string; mode: ColorMode }> = {
-  aretian: { bg: '#0f0f1a', mode: 'dark' },
   services: { bg: '#1a2a3a', mode: 'dark' },
   process: { bg: '#0f0f1a', mode: 'dark' },
   design: { bg: '#0f0f1a', mode: 'dark' },
@@ -26,8 +26,12 @@ const SECTION_THEME: Record<string, { bg: string; mode: ColorMode }> = {
 
 // Global animated background
 function GlobalBackground({ sectionId }: { sectionId: string }) {
-  const theme = SECTION_THEME[sectionId] || { bg: '#0f0f1a', mode: 'dark' };
-  const bgColor = theme.bg;
+  const palette = usePaletteStore((state) => state.palette);
+
+  // Use palette bg for aretian section, otherwise use section theme
+  const bgColor = sectionId === 'aretian'
+    ? palette.bg
+    : (SECTION_THEME[sectionId]?.bg || '#0f0f1a');
 
   return (
     <motion.div
