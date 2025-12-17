@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LayerVisibility } from '@/components/CityScene';
 
-// Layer animation order
+// Layer animation order: roads, trees, data (markers), buildings
 const LAYER_ORDER: (keyof LayerVisibility)[] = [
   'grid',
   'roads',
-  'buildings',
   'trees',
   'parking',
   'bikeLanes',
@@ -15,6 +14,7 @@ const LAYER_ORDER: (keyof LayerVisibility)[] = [
   'bicingStations',
   'trafficViolations',
   'flowParticles',
+  'buildings',
 ];
 
 // All layers hidden

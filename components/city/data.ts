@@ -1,15 +1,24 @@
-// Barcelona Eixample bounds (polygon centroid)
-export const CENTER = { lat: 41.39112, lon: 2.15665 };
-export const RADIUS_M = 1300;
+// Barcelona Eixample bounds - circular region
+export const CENTER = { lat: 41.39217756756757, lon: 2.15813620693481 };
+export const RADIUS_M = 665;
 
-// Custom perimeter polygon
-export const BOUNDS_POLYGON = [
-  { lat: 41.39281945945946, lon: 2.1423599813729917 },
-  { lat: 41.40115279279279, lon: 2.1572505767653074 },
-  { lat: 41.39052216216216, lon: 2.1705500399886866 },
-  { lat: 41.379981621621624, lon: 2.15644 },
-  { lat: 41.392278918918926, lon: 2.1408589132890885 },
-];
+// Generate circular perimeter polygon (64 points)
+function generateCirclePolygon(center: { lat: number; lon: number }, radiusM: number, numPoints = 64) {
+  const points: { lat: number; lon: number }[] = [];
+  const latRadius = radiusM / 111000;
+  const lonRadius = radiusM / (111000 * Math.cos(center.lat * Math.PI / 180));
+
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    points.push({
+      lat: center.lat + latRadius * Math.cos(angle),
+      lon: center.lon + lonRadius * Math.sin(angle),
+    });
+  }
+  return points;
+}
+
+export const BOUNDS_POLYGON = generateCirclePolygon(CENTER, RADIUS_M);
 
 export function project(lon: number, lat: number): [number, number, number] {
   const x = (lon - CENTER.lon) * 111000 * Math.cos(CENTER.lat * Math.PI / 180);

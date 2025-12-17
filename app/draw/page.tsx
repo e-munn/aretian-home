@@ -149,11 +149,27 @@ function TopDownCamera() {
   return null;
 }
 
+// Generate circle points
+function generateCirclePoints(center: [number, number], radius: number, segments: number = 64): [number, number][] {
+  const points: [number, number][] = [];
+  for (let i = 0; i < segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    points.push([
+      center[0] + Math.cos(angle) * radius,
+      center[1] + Math.sin(angle) * radius
+    ]);
+  }
+  return points;
+}
+
 export default function DrawPage() {
   const [roads, setRoads] = useState<[number, number][][]>([]);
   const [points, setPoints] = useState<[number, number][]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [isDrawing, setIsDrawing] = useState(true);
+  const [mode, setMode] = useState<'polygon' | 'circle'>('polygon');
+  const [circleCenter, setCircleCenter] = useState<[number, number] | null>(null);
+  const [circleRadius, setCircleRadius] = useState<number>(0);
 
   // Load roads on mount
   useEffect(() => {
@@ -162,8 +178,26 @@ export default function DrawPage() {
 
   const handlePointAdd = useCallback((point: [number, number]) => {
     if (!isDrawing) return;
-    setPoints(prev => [...prev, point]);
-  }, [isDrawing]);
+
+    if (mode === 'circle') {
+      if (!circleCenter) {
+        // First click sets center
+        setCircleCenter(point);
+      } else {
+        // Second click sets radius and completes
+        const dx = point[0] - circleCenter[0];
+        const dy = point[1] - circleCenter[1];
+        const radius = Math.sqrt(dx * dx + dy * dy);
+        setCircleRadius(radius);
+        const circlePoints = generateCirclePoints(circleCenter, radius);
+        setPoints(circlePoints);
+        setIsComplete(true);
+        setIsDrawing(false);
+      }
+    } else {
+      setPoints(prev => [...prev, point]);
+    }
+  }, [isDrawing, mode, circleCenter]);
 
   const handleComplete = () => {
     if (points.length >= 3) {
@@ -176,6 +210,13 @@ export default function DrawPage() {
     setPoints([]);
     setIsComplete(false);
     setIsDrawing(true);
+    setCircleCenter(null);
+    setCircleRadius(0);
+  };
+
+  const handleModeChange = (newMode: 'polygon' | 'circle') => {
+    handleClear();
+    setMode(newMode);
   };
 
   const handleExport = () => {
@@ -211,6 +252,13 @@ export default function DrawPage() {
         <TopDownCamera />
         <RoadsLayer roads={roads} />
         <PolygonLayer points={points} isComplete={isComplete} />
+        {/* Circle center marker */}
+        {mode === 'circle' && circleCenter && !isComplete && (
+          <mesh position={[circleCenter[0], circleCenter[1], 1]}>
+            <circleGeometry args={[20, 16]} />
+            <meshBasicMaterial color="#ffaa00" />
+          </mesh>
+        )}
         <ClickHandler onPointAdd={handlePointAdd} enabled={isDrawing} />
         <OrbitControls
           enableRotate={false}
@@ -233,13 +281,50 @@ export default function DrawPage() {
         fontSize: 14,
       }}>
         <h2 style={{ margin: 0, fontSize: 18 }}>Draw Perimeter</h2>
+
+        {/* Mode selector */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            onClick={() => handleModeChange('polygon')}
+            style={{
+              padding: '6px 12px',
+              background: mode === 'polygon' ? '#0066aa' : '#333',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            Polygon
+          </button>
+          <button
+            onClick={() => handleModeChange('circle')}
+            style={{
+              padding: '6px 12px',
+              background: mode === 'circle' ? '#0066aa' : '#333',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            Circle
+          </button>
+        </div>
+
         <p style={{ margin: 0, color: '#888' }}>
           {isDrawing
-            ? 'Click to add points. Complete polygon when done.'
-            : 'Polygon complete. Export or clear to redraw.'}
+            ? mode === 'circle'
+              ? circleCenter
+                ? 'Click to set radius'
+                : 'Click to set center point'
+              : 'Click to add points. Complete polygon when done.'
+            : 'Shape complete. Export or clear to redraw.'}
         </p>
         <div style={{ display: 'flex', gap: 8 }}>
-          {isDrawing && points.length >= 3 && (
+          {isDrawing && mode === 'polygon' && points.length >= 3 && (
             <button
               onClick={handleComplete}
               style={{
@@ -299,7 +384,9 @@ export default function DrawPage() {
           </div>
         )}
         <div style={{ fontSize: 12, color: '#666' }}>
-          Points: {points.length}
+          {mode === 'circle' && circleRadius > 0
+            ? `Radius: ${Math.round(circleRadius)}m (${points.length} points)`
+            : `Points: ${points.length}`}
         </div>
       </div>
 
@@ -314,10 +401,19 @@ export default function DrawPage() {
         color: '#888',
         fontSize: 12,
       }}>
-        <div>• Click to add points</div>
+        {mode === 'circle' ? (
+          <>
+            <div>• Click once to set center</div>
+            <div>• Click again to set radius</div>
+          </>
+        ) : (
+          <>
+            <div>• Click to add points</div>
+            <div>• Red dot = first point</div>
+          </>
+        )}
         <div>• Pan with left mouse drag</div>
         <div>• Scroll to zoom</div>
-        <div>• Red dot = first point</div>
       </div>
     </div>
   );

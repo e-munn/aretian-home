@@ -70,12 +70,12 @@ interface FlowParticlesProps {
   opacity?: number;
 }
 
-export function FlowParticles({ roads, color = '#00c217', opacity = 0.47 }: FlowParticlesProps) {
+export function FlowParticles({ roads, color = '#f97316', opacity = 0.6 }: FlowParticlesProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObject = useMemo(() => new THREE.Object3D(), []);
 
-  const particleRoads = useMemo(() => roads.slice(0, 40), [roads]);
-  const particleCount = particleRoads.length * 2;
+  const particleRoads = useMemo(() => roads.slice(0, 100), [roads]);
+  const particleCount = particleRoads.length * 4;
 
   const pathData = useMemo(() => {
     return particleRoads.map((road, ri) => {
@@ -92,7 +92,7 @@ export function FlowParticles({ roads, color = '#00c217', opacity = 0.47 }: Flow
         totalLen += segLen;
       }
 
-      return { path, totalLen, segLengths, offsets: [(ri * 37) % 500, (ri * 37 + 167) % 500] };
+      return { path, totalLen, segLengths, offsets: [(ri * 37) % 500, (ri * 37 + 125) % 500, (ri * 37 + 250) % 500, (ri * 37 + 375) % 500] };
     });
   }, [particleRoads]);
 

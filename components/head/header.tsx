@@ -44,7 +44,7 @@ function NavItem({
       onMouseLeave={onLeave}
     >
       <motion.button
-        className={`font-medium uppercase tracking-wide cursor-pointer bg-transparent border-none text-left px-2 py-1 transition-colors duration-300 ${getTextColor()}`}
+        className={`font-medium uppercase tracking-wide cursor-pointer bg-transparent border-none text-left px-2 py-1 transition-colors duration-300 font-google ${getTextColor()}`}
         style={{ fontSize: 'clamp(1rem, 2.5vw, 1.5rem)' }}
         whileHover={{ x: 4 }}
         whileTap={{ scale: 0.95 }}

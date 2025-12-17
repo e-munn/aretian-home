@@ -1,27 +1,42 @@
 #!/usr/bin/env node
 
 /**
- * Regenerate city data files for the custom perimeter
+ * Regenerate city data files for the circular perimeter
  * Run with: node scripts/regenerate-city-data.js
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// Load perimeter
-const perimeterPath = path.join(__dirname, '../public/data/perimeter/custom-perimeter.json');
-const perimeter = JSON.parse(fs.readFileSync(perimeterPath, 'utf-8'));
+// Circle definition - single source of truth
+const CENTER = { lat: 41.39217756756757, lon: 2.15813620693481 };
+const RADIUS_M = 665;
 
-console.log('Loaded perimeter with', perimeter.length, 'points');
+// Generate circular perimeter polygon
+function generateCirclePolygon(center, radiusM, numPoints = 64) {
+  const points = [];
+  const latRadius = radiusM / 111000;
+  const lonRadius = radiusM / (111000 * Math.cos(center.lat * Math.PI / 180));
 
-// Calculate bounding box from perimeter
-const lats = perimeter.map(p => p.lat);
-const lons = perimeter.map(p => p.lon);
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    points.push({
+      lat: center.lat + latRadius * Math.cos(angle),
+      lon: center.lon + lonRadius * Math.sin(angle),
+    });
+  }
+  return points;
+}
+
+const perimeter = generateCirclePolygon(CENTER, RADIUS_M);
+console.log(`Generated circular perimeter: center (${CENTER.lat}, ${CENTER.lon}), radius ${RADIUS_M}m, ${perimeter.length} points`);
+
+// Calculate bounding box
 const bbox = {
-  minLat: Math.min(...lats),
-  maxLat: Math.max(...lats),
-  minLon: Math.min(...lons),
-  maxLon: Math.max(...lons),
+  minLat: CENTER.lat - RADIUS_M / 111000,
+  maxLat: CENTER.lat + RADIUS_M / 111000,
+  minLon: CENTER.lon - RADIUS_M / (111000 * Math.cos(CENTER.lat * Math.PI / 180)),
+  maxLon: CENTER.lon + RADIUS_M / (111000 * Math.cos(CENTER.lat * Math.PI / 180)),
 };
 
 console.log('Bounding box:', bbox);

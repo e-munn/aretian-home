@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import { aretianGreen, aretianBlue, aretianWhite } from './lib/colors'
 const { fontFamily } = require('tailwindcss/defaultTheme')
 
 const config = {
@@ -21,8 +22,12 @@ const config = {
         sans: ['var(--font-merri)', ...fontFamily.sans],
         serif: ['var(--font-serif)'],
         mono: ['var(--font-mono)'],
+        google: ['var(--font-sans)'],
       },
       colors: {
+        aretianGreen,
+        aretianBlue,
+        aretianWhite,
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

@@ -1,19 +1,38 @@
 'use client';
 
+import dynamic from 'next/dynamic';
+
+// Dynamically import TransitMap to avoid SSR issues with Three.js
+const TransitMap = dynamic(() => import('@/components/TransitMap'), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      width: '100%',
+      height: '100%',
+      background: '#0f0f1a',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#666'
+    }}>
+      Loading transit data...
+    </div>
+  ),
+});
+
 export function DesignSection() {
   return (
-    <div className="w-full h-full bg-black flex items-center justify-center p-16">
-      <div className="max-w-4xl text-center">
-        <div className="w-24 h-24 mx-auto mb-8 border-2 border-white/30 rounded-full flex items-center justify-center">
-          <div className="w-12 h-12 border-2 border-white/60 rounded-lg" />
-        </div>
-        <h2 className="text-4xl md:text-5xl font-light text-white mb-6">
-          Urban Design Solutions
-        </h2>
-        <p className="text-xl md:text-2xl font-light text-white/50">
-          Creating sustainable, livable spaces through innovative urban design and master planning.
-        </p>
-      </div>
-    </div>
+    <section
+      id="design"
+      style={{
+        width: '100%',
+        height: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#0f0f1a',
+      }}
+    >
+      <TransitMap />
+    </section>
   );
 }

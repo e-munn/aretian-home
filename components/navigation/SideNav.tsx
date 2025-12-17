@@ -1,10 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 export interface NavSection {
   id: string;
   label: string;
+  description?: string;
 }
 
 interface SideNavProps {
@@ -13,16 +15,37 @@ interface SideNavProps {
   onNavigate?: (index: number) => void;
 }
 
-export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
-  return (
-    <div className="fixed left-0 top-0 bottom-0 z-50 w-screen h-screen flex flex-col pointer-events-none">
-      {/* Logo */}
-      <div className="p-8">
-        <span className="text-2xl font-bold tracking-wider text-white uppercase">
-          Aretian
-        </span>
-      </div>
+const FONTS = [
+  { key: '1', name: 'Google Sans', family: "'Google Sans', sans-serif" },
+  { key: '2', name: 'Space Grotesk', family: 'var(--font-space-grotesk)' },
+  { key: '3', name: 'Outfit', family: 'var(--font-outfit)' },
+  { key: '4', name: 'Urbanist', family: 'var(--font-urbanist)' },
+  { key: '5', name: 'Plus Jakarta Sans', family: 'var(--font-plus-jakarta)' },
+  { key: '6', name: 'Albert Sans', family: 'var(--font-albert-sans)' },
+  { key: '7', name: 'Josefin Sans', family: 'var(--font-josefin-sans)' },
+  { key: '8', name: 'Rubik', family: 'var(--font-rubik)' },
+  { key: '9', name: 'DM Sans', family: 'var(--font-dm-sans)' },
+  { key: '0', name: 'Sora', family: 'var(--font-sora)' },
+];
 
+export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
+  const [fontIndex, setFontIndex] = useState(2); // Outfit
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const fontKey = FONTS.findIndex(f => f.key === e.key);
+      if (fontKey !== -1) {
+        setFontIndex(fontKey);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const currentFont = FONTS[fontIndex];
+
+  return (
+    <div className="fixed left-0 top-0 bottom-0 z-[100] w-screen h-screen flex flex-col pointer-events-none">
       {/* Navigation */}
       <nav className="flex-1 flex flex-col justify-center px-8">
         <ul className="flex flex-col gap-2 list-none m-0 p-0">
@@ -46,7 +69,12 @@ export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
               >
                 <span
                   className="text-white font-bold uppercase whitespace-nowrap"
-                  style={{ fontSize: 'clamp(4rem, 10vw, 8rem)', lineHeight: 0.85 }}
+                  style={{
+                    fontSize: index === 0 ? 'clamp(5rem, 12vw, 10rem)' : 'clamp(4rem, 10vw, 8rem)',
+                    lineHeight: 0.85,
+                    letterSpacing: index === 0 ? '0.15em' : 'normal',
+                    fontFamily: index === 0 ? 'var(--font-geo)' : currentFont.family
+                  }}
                 >
                   {section.label}
                 </span>
@@ -55,6 +83,8 @@ export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
           ))}
         </ul>
       </nav>
+
+{/* Font picker hidden - press 1-9, 0 to change */}
     </div>
   );
 }

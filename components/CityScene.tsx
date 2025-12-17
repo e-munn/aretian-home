@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { useLayerStore } from '@/stores/layerStore'
 
 // City components
 import { DotGrid, GRID_ANGLE } from './city/Grid'
@@ -26,9 +28,9 @@ import { BusStopMarkers, BicingMarkers, TrafficViolationMarkers } from './city/M
 import { fetchOSMData, parseRoads } from './city/data'
 
 // Visual settings
-const BG_COLOR = '#3a3958'
-const BUILDING_COLOR = '#1B283B'
-const BUILDING_OPACITY = 0.82
+const BG_COLOR = '#0f0f1a'
+const BUILDING_COLOR = '#18182b'
+const BUILDING_OPACITY = 0.87
 
 // Layer visibility for animations
 export interface LayerVisibility {
@@ -57,9 +59,6 @@ const ALL_VISIBLE: LayerVisibility = {
   flowParticles: true,
 }
 
-// Dot grid color derived from background
-const DOT_COLOR = '#2e2e45' // darkenColor(BG_COLOR, 0.7)
-
 // Scene
 interface SceneProps {
   roads: RoadData[]
@@ -71,6 +70,8 @@ interface SceneProps {
   parkingZones: ParkingZoneData[]
   bikeLanes: BikeLaneData[]
   layers: LayerVisibility
+  buildingColor: string
+  buildingOpacity: number
 }
 
 function Scene({
@@ -83,39 +84,70 @@ function Scene({
   parkingZones,
   bikeLanes,
   layers,
+  buildingColor,
+  buildingOpacity,
 }: SceneProps) {
-  const { camera } = useThree()
-  const [offset, setOffset] = useState({ x: 180, y: 180 })
+  const { camera, size } = useThree()
+  const [baseOffset, setBaseOffset] = useState({ x: 0, y: 0 })
 
   const dist = 500
   const orbitAngle = Math.PI / 4
   const elevation = Math.atan(1 / Math.sqrt(2))
 
-  // Update camera position when offset changes
+  // Calculate responsive offset and zoom based on viewport
   useEffect(() => {
+    const aspect = size.width / size.height
+    const orthoCamera = camera as THREE.OrthographicCamera
+
+    // Base zoom scales with viewport - use the smaller dimension
+    // Reference: 1920x1080 should have zoom ~0.8
+    const baseZoom = Math.min(size.width / 1920, size.height / 1080) * 0.85
+    orthoCamera.zoom = Math.max(0.4, Math.min(1.2, baseZoom))
+
+    // Offset to position scene - shifts right and up on wider screens
+    // On narrow screens, center more
+    let offsetX: number
+    let offsetY: number
+
+    if (aspect > 1.4) {
+      // Wide screen (desktop) - push scene to the right
+      offsetX = 250 + (aspect - 1.4) * 50
+      offsetY = -150
+    } else if (aspect > 1) {
+      // Medium width - transition
+      offsetX = 150 + (aspect - 1) * 100
+      offsetY = -100
+    } else {
+      // Narrow (mobile/tablet) - center the scene more
+      offsetX = 50
+      offsetY = 0
+    }
+
+    const finalX = offsetX + baseOffset.x
+    const finalY = offsetY + baseOffset.y
+
     camera.position.set(
-      dist * Math.cos(orbitAngle) * Math.cos(elevation) + offset.x,
-      dist * Math.sin(orbitAngle) * Math.cos(elevation) + offset.y,
+      dist * Math.cos(orbitAngle) * Math.cos(elevation) + finalX,
+      dist * Math.sin(orbitAngle) * Math.cos(elevation) + finalY,
       dist * Math.sin(elevation)
     )
     camera.up.set(0, 0, 1)
-    camera.lookAt(offset.x, offset.y, 0)
+    camera.lookAt(finalX, finalY, 0)
     camera.updateProjectionMatrix()
-    console.log('Camera offset:', offset.x, offset.y)
-  }, [camera, offset])
+  }, [camera, size, baseOffset])
 
   // Keyboard controls for camera position
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const step = 20
       if (e.key === 'ArrowLeft') {
-        setOffset((prev) => ({ ...prev, x: prev.x - step }))
+        setBaseOffset((prev) => ({ ...prev, x: prev.x - step }))
       } else if (e.key === 'ArrowRight') {
-        setOffset((prev) => ({ ...prev, x: prev.x + step }))
+        setBaseOffset((prev) => ({ ...prev, x: prev.x + step }))
       } else if (e.key === 'ArrowUp') {
-        setOffset((prev) => ({ ...prev, y: prev.y + step }))
+        setBaseOffset((prev) => ({ ...prev, y: prev.y + step }))
       } else if (e.key === 'ArrowDown') {
-        setOffset((prev) => ({ ...prev, y: prev.y - step }))
+        setBaseOffset((prev) => ({ ...prev, y: prev.y - step }))
       }
     }
 
@@ -124,8 +156,8 @@ function Scene({
   }, [])
 
   return (
-    <group rotation={[0, 0, -GRID_ANGLE]} position={[-100, -100, -80]}>
-      {layers.grid && <DotGrid color={DOT_COLOR} opacity={0.5} />}
+    <group rotation={[0, 0, -GRID_ANGLE]} position={[0, 0, -40]}>
+      {layers.grid && <DotGrid color="#596689" activeColor="#c5c9d6" opacity={0.6} />}
       {layers.roads && <Roads roads={roads} />}
       {layers.parking && <ParkingZones zones={parkingZones} opacity={0.6} />}
       {layers.bikeLanes && <BikeLanes lanes={bikeLanes} color='#44cc66' lineWidth={2} />}
@@ -133,8 +165,8 @@ function Scene({
       {layers.buildings && (
         <DetailedBuildings
           buildings={buildings}
-          color={BUILDING_COLOR}
-          fillOpacity={BUILDING_OPACITY}
+          color={buildingColor}
+          fillOpacity={buildingOpacity}
           edgeOpacity={0}
         />
       )}
@@ -161,41 +193,112 @@ export default function CityScene({ layers: layerOverrides }: CitySceneProps = {
   const [parkingZones, setParkingZones] = useState<ParkingZoneData[]>([])
   const [bikeLanes, setBikeLanes] = useState<BikeLaneData[]>([])
 
+  // Building appearance controls
+  const [buildingColor, setBuildingColor] = useState(BUILDING_COLOR)
+  const [buildingOpacity, setBuildingOpacity] = useState(BUILDING_OPACITY)
+
+  // Layer loading store
+  const setLoaded = useLayerStore((state) => state.setLoaded)
+
   const layers: LayerVisibility = { ...ALL_VISIBLE, ...layerOverrides }
 
-  // Fetch data
+  // Grid is always immediately available (no data fetch)
+  useEffect(() => {
+    setLoaded('grid')
+  }, [setLoaded])
+
+  // Fetch roads data
   useEffect(() => {
     fetchOSMData()
-      .then((data) => setRoads(parseRoads(data)))
+      .then((data) => {
+        setRoads(parseRoads(data))
+        setLoaded('roads')
+      })
       .catch(console.error)
-  }, [])
+  }, [setLoaded])
+
+  // Fetch trees data
   useEffect(() => {
-    fetchBarcelonaTrees().then(setTrees).catch(console.error)
-  }, [])
+    fetchBarcelonaTrees()
+      .then((data) => {
+        setTrees(data)
+        setLoaded('trees')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch buildings data
   useEffect(() => {
-    fetchOvertureBuildings().then(setBuildings).catch(console.error)
-  }, [])
+    fetchOvertureBuildings()
+      .then((data) => {
+        setBuildings(data)
+        setLoaded('buildings')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch bus stops data
   useEffect(() => {
-    fetchBusStops().then(setBusStops).catch(console.error)
-  }, [])
+    fetchBusStops()
+      .then((data) => {
+        setBusStops(data)
+        setLoaded('busStops')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch bicing stations data
   useEffect(() => {
-    fetchBicingStations().then(setBicingStations).catch(console.error)
-  }, [])
+    fetchBicingStations()
+      .then((data) => {
+        setBicingStations(data)
+        setLoaded('bicingStations')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch traffic violations data
   useEffect(() => {
-    fetchTrafficViolations().then(setTrafficViolations).catch(console.error)
-  }, [])
+    fetchTrafficViolations()
+      .then((data) => {
+        setTrafficViolations(data)
+        setLoaded('trafficViolations')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch parking zones data
   useEffect(() => {
-    fetchParkingZones().then(setParkingZones).catch(console.error)
-  }, [])
+    fetchParkingZones()
+      .then((data) => {
+        setParkingZones(data)
+        setLoaded('parking')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Fetch bike lanes data
   useEffect(() => {
-    fetchBikeLanes().then(setBikeLanes).catch(console.error)
-  }, [])
+    fetchBikeLanes()
+      .then((data) => {
+        setBikeLanes(data)
+        setLoaded('bikeLanes')
+      })
+      .catch(console.error)
+  }, [setLoaded])
+
+  // Flow particles are available once roads are loaded
+  useEffect(() => {
+    if (roads.length > 0) {
+      setLoaded('flowParticles')
+    }
+  }, [roads, setLoaded])
 
   return (
     <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
       <Canvas
         orthographic
-        camera={{ zoom: 0.65, position: [0, 0, 500], near: 0.1, far: 2000 }}
+        camera={{ zoom: 0.8, position: [0, 0, 500], near: -1000, far: 2000 }}
         style={{ width: '100%', height: '100%', background: BG_COLOR }}
       >
         {roads.length > 0 && (
@@ -209,9 +312,63 @@ export default function CityScene({ layers: layerOverrides }: CitySceneProps = {
             parkingZones={parkingZones}
             bikeLanes={bikeLanes}
             layers={layers}
+            buildingColor={buildingColor}
+            buildingOpacity={buildingOpacity}
           />
         )}
       </Canvas>
+
+      {/* Building Controls - hidden */}
+      <div
+        style={{
+          display: 'none',
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          background: 'rgba(0,0,0,0.7)',
+          padding: '12px 16px',
+          borderRadius: 8,
+          flexDirection: 'column',
+          gap: 12,
+          fontFamily: 'var(--font-sans)',
+          fontSize: 12,
+          color: 'white',
+          zIndex: 100,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label style={{ opacity: 0.7, minWidth: 50 }}>Color</label>
+          <input
+            type="color"
+            value={buildingColor}
+            onChange={(e) => setBuildingColor(e.target.value)}
+            style={{
+              width: 32,
+              height: 24,
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              background: 'transparent',
+            }}
+          />
+          <span style={{ opacity: 0.5, fontFamily: 'monospace' }}>{buildingColor}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label style={{ opacity: 0.7, minWidth: 50 }}>Opacity</label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={buildingOpacity}
+            onChange={(e) => setBuildingOpacity(parseFloat(e.target.value))}
+            style={{ width: 80 }}
+          />
+          <span style={{ opacity: 0.5, fontFamily: 'monospace', minWidth: 36 }}>
+            {buildingOpacity.toFixed(2)}
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

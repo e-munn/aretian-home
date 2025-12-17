@@ -3,25 +3,11 @@
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
-import { project } from './data';
+import { project, BOUNDS_POLYGON } from './data';
 
-// Custom perimeter polygon for filtering
-let cachedPerimeter: { lat: number; lon: number }[] | null = null;
-
-async function getPerimeter(): Promise<{ lat: number; lon: number }[]> {
-  if (cachedPerimeter) return cachedPerimeter;
-  try {
-    const response = await fetch('/data/perimeter/custom-perimeter-shrunk.json');
-    if (response.ok) {
-      cachedPerimeter = await response.json();
-      return cachedPerimeter!;
-    }
-  } catch (e) {}
-  return [];
-}
-
+// Use the BOUNDS_POLYGON from data.ts (circular perimeter)
 function pointInPolygon(lat: number, lon: number, polygon: { lat: number; lon: number }[]): boolean {
-  if (polygon.length < 3) return true; // No polygon = allow all
+  if (polygon.length < 3) return true;
   let inside = false;
   let j = polygon.length - 1;
   for (let i = 0; i < polygon.length; i++) {
@@ -35,6 +21,11 @@ function pointInPolygon(lat: number, lon: number, polygon: { lat: number; lon: n
   return inside;
 }
 
+// Helper to check if point is inside bounds
+function isInsideBounds(lat: number, lon: number): boolean {
+  return pointInPolygon(lat, lon, BOUNDS_POLYGON);
+}
+
 // ============ BUS STOPS ============
 // Local cached data from Barcelona Open Data
 
@@ -46,10 +37,7 @@ export interface BusStopData {
 
 export async function fetchBusStops(): Promise<BusStopData[]> {
   try {
-    const [response, perimeter] = await Promise.all([
-      fetch('/data/barcelona/bus-stops.json'),
-      getPerimeter()
-    ]);
+    const response = await fetch('/data/barcelona/bus-stops.json');
 
     if (!response.ok) {
       console.warn('Bus stops data not found');
@@ -65,7 +53,7 @@ export async function fetchBusStops(): Promise<BusStopData[]> {
       .filter((r: any) => {
         const lat = parseFloat(r.LATITUD);
         const lon = parseFloat(r.LONGITUD);
-        return lat && lon && pointInPolygon(lat, lon, perimeter);
+        return lat && lon && isInsideBounds(lat, lon);
       })
       .map((r: any) => ({
         position: project(parseFloat(r.LONGITUD), parseFloat(r.LATITUD)),
@@ -156,10 +144,7 @@ export interface ParkingZoneData {
 
 export async function fetchParkingZones(): Promise<ParkingZoneData[]> {
   try {
-    const [response, perimeter] = await Promise.all([
-      fetch('/data/barcelona/parking-zones.json'),
-      getPerimeter()
-    ]);
+    const response = await fetch('/data/barcelona/parking-zones.json');
 
     if (!response.ok) {
       console.warn('Parking zones data not found');
@@ -179,8 +164,8 @@ export async function fetchParkingZones(): Promise<ParkingZoneData[]> {
         const lonF = parseFloat(r.LONGITUD_F);
         // Both endpoints must be inside perimeter
         return latI && lonI && latF && lonF &&
-          pointInPolygon(latI, lonI, perimeter) &&
-          pointInPolygon(latF, lonF, perimeter);
+          isInsideBounds(latI, lonI) &&
+          isInsideBounds(latF, lonF);
       })
       .map((r: any) => ({
         startPos: project(parseFloat(r.LONGITUD_I), parseFloat(r.LATITUD_I)),
@@ -246,10 +231,7 @@ export interface BikeLaneData {
 
 export async function fetchBikeLanes(): Promise<BikeLaneData[]> {
   try {
-    const [response, perimeter] = await Promise.all([
-      fetch('/data/barcelona/bike-lanes.geojson'),
-      getPerimeter()
-    ]);
+    const response = await fetch('/data/barcelona/bike-lanes.geojson');
 
     if (!response.ok) {
       return []; // File not available yet
@@ -275,7 +257,7 @@ export async function fetchBikeLanes(): Promise<BikeLaneData[]> {
 
       // Filter to only points inside perimeter
       const path: [number, number, number][] = coordinates
-        .filter(([lon, lat]) => pointInPolygon(lat, lon, perimeter))
+        .filter(([lon, lat]) => isInsideBounds(lat, lon))
         .map(([lon, lat]) => project(lon, lat));
 
       if (path.length >= 2) {
@@ -329,10 +311,7 @@ export interface BicingStationData {
 
 export async function fetchBicingStations(): Promise<BicingStationData[]> {
   try {
-    const [response, perimeter] = await Promise.all([
-      fetch('/data/barcelona/bicing-stations.json'),
-      getPerimeter()
-    ]);
+    const response = await fetch('/data/barcelona/bicing-stations.json');
 
     if (!response.ok) {
       console.warn('Bicing stations data not found');
@@ -348,7 +327,7 @@ export async function fetchBicingStations(): Promise<BicingStationData[]> {
       .filter((s: any) => {
         const lat = s.latitude;
         const lon = s.longitude;
-        return lat && lon && pointInPolygon(lat, lon, perimeter);
+        return lat && lon && isInsideBounds(lat, lon);
       })
       .map((s: any) => ({
         position: project(s.longitude, s.latitude),
@@ -439,10 +418,7 @@ export interface TrafficViolationData {
 
 export async function fetchTrafficViolations(): Promise<TrafficViolationData[]> {
   try {
-    const [response, perimeter] = await Promise.all([
-      fetch('/data/barcelona/traffic-violations.json'),
-      getPerimeter()
-    ]);
+    const response = await fetch('/data/barcelona/traffic-violations.json');
 
     if (!response.ok) {
       console.warn('Traffic violations data not found');
@@ -458,7 +434,7 @@ export async function fetchTrafficViolations(): Promise<TrafficViolationData[]> 
       .filter((r: any) => {
         const lat = parseFloat(r.Latitud_WGS84);
         const lon = parseFloat(r.Longitud_WGS84);
-        return lat && lon && pointInPolygon(lat, lon, perimeter);
+        return lat && lon && isInsideBounds(lat, lon);
       })
       .map((r: any) => ({
         position: project(parseFloat(r.Longitud_WGS84), parseFloat(r.Latitud_WGS84)),

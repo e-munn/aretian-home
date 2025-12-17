@@ -194,17 +194,41 @@ function TransitLayer({
   );
 }
 
-// Camera setup
-function CameraSetup({ zoom }: { zoom: number }) {
-  const { camera } = useThree();
+// Camera setup - responsive like CityScene
+function CameraSetup({ baseZoom }: { baseZoom: number }) {
+  const { camera, size } = useThree();
 
   useEffect(() => {
-    camera.position.set(0, 0, 2000);
+    const aspect = size.width / size.height;
+    const orthoCamera = camera as THREE.OrthographicCamera;
+
+    // Base zoom scales with viewport - reference: 1920x1080
+    const responsiveZoom = Math.min(size.width / 1920, size.height / 1080) * baseZoom * 2.5;
+    orthoCamera.zoom = Math.max(0.15, Math.min(0.6, responsiveZoom));
+
+    // Offset to position scene - shifts right on wider screens
+    let offsetX: number;
+    let offsetY: number;
+
+    if (aspect > 1.4) {
+      // Wide screen (desktop) - push scene to the right
+      offsetX = 600 + (aspect - 1.4) * 150;
+      offsetY = -50;
+    } else if (aspect > 1) {
+      // Medium width
+      offsetX = 400 + (aspect - 1) * 200;
+      offsetY = 0;
+    } else {
+      // Narrow (mobile)
+      offsetX = 100;
+      offsetY = 0;
+    }
+
+    camera.position.set(offsetX, offsetY, 2000);
     camera.up.set(0, 1, 0);
-    camera.lookAt(0, 0, 0);
-    (camera as any).zoom = zoom;
+    camera.lookAt(offsetX, offsetY, 0);
     camera.updateProjectionMatrix();
-  }, [camera, zoom]);
+  }, [camera, size, baseZoom]);
 
   return null;
 }
@@ -248,7 +272,7 @@ export default function TransitMap({ className }: TransitMapProps) {
         camera={{ zoom: city.zoom, position: [0, 0, 2000], near: 0.1, far: 5000 }}
         style={{ width: '100%', height: '100%' }}
       >
-        <CameraSetup zoom={city.zoom} />
+        <CameraSetup baseZoom={city.zoom} />
         <group rotation={[0, 0, city.rotation]}>
           <WaterLayer polygons={water} />
           <RoadsLayer roads={roads} />

@@ -3,268 +3,193 @@
 import { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 
-// Tailwind color palette (bold colors)
+// Tailwind colors
 export const COLORS = {
   blue500: '#3b82f6',
-  blue600: '#2563eb',
   red500: '#ef4444',
-  red600: '#dc2626',
-  orange500: '#f97316',
-  orange600: '#ea580c',
-  green500: '#22c55e',
-  green600: '#16a34a',
-  yellow500: '#eab308',
   yellow400: '#facc15',
-  purple500: '#a855f7',
-  cyan500: '#06b6d4',
-  pink500: '#ec4899',
-  slate700: '#334155',
+  green500: '#22c55e',
   white: '#ffffff',
 };
 
 // ============ BUS STOP MARKERS ============
-// Tall pole with bus shelter icon at top
+// Simple circle on pole - BLUE
 
 interface BusStopMarkersProps {
   positions: [number, number, number][];
-  poleColor?: string;
-  iconColor?: string;
+  color?: string;
   poleHeight?: number;
 }
 
 export function BusStopMarkers({
   positions,
-  poleColor = COLORS.blue600,
-  iconColor = COLORS.blue500,
-  poleHeight = 35,
+  color = COLORS.blue500,
+  poleHeight = 30,
 }: BusStopMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
-  const iconRef = useRef<THREE.InstancedMesh>(null);
-  const roofRef = useRef<THREE.InstancedMesh>(null);
+  const circleRef = useRef<THREE.InstancedMesh>(null);
 
   useEffect(() => {
-    if (!poleRef.current || !iconRef.current || !roofRef.current || positions.length === 0) return;
+    if (!poleRef.current || !circleRef.current || positions.length === 0) return;
 
     const tempObject = new THREE.Object3D();
 
     positions.forEach((pos, i) => {
-      // Tall thin pole
+      // Pole
       tempObject.position.set(pos[0], pos[1], poleHeight / 2);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
-      // Bus icon body (rectangle) at top - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 6);
+      // Circle at top
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
-      iconRef.current!.setMatrixAt(i, tempObject.matrix);
-
-      // Bus roof/top - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 10);
-      tempObject.rotation.set(0, 0, 0);
-      tempObject.scale.set(1, 1, 1);
-      tempObject.updateMatrix();
-      roofRef.current!.setMatrixAt(i, tempObject.matrix);
+      circleRef.current!.setMatrixAt(i, tempObject.matrix);
     });
 
     poleRef.current.instanceMatrix.needsUpdate = true;
-    iconRef.current.instanceMatrix.needsUpdate = true;
-    roofRef.current.instanceMatrix.needsUpdate = true;
+    circleRef.current.instanceMatrix.needsUpdate = true;
   }, [positions, poleHeight]);
 
   if (positions.length === 0) return null;
 
   return (
     <>
-      {/* Poles */}
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
-        <meshBasicMaterial color={poleColor} />
+        <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
+        <meshBasicMaterial color={color} />
       </instancedMesh>
-
-      {/* Bus body icon */}
-      <instancedMesh ref={iconRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <boxGeometry args={[12, 6, 7]} />
-        <meshBasicMaterial color={iconColor} />
-      </instancedMesh>
-
-      {/* Bus roof stripe */}
-      <instancedMesh ref={roofRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <boxGeometry args={[13, 7, 1.5]} />
-        <meshBasicMaterial color={COLORS.white} />
+      <instancedMesh ref={circleRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <circleGeometry args={[5, 16]} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </instancedMesh>
     </>
   );
 }
 
 // ============ BICING STATION MARKERS ============
-// Tall pole with bike wheel icon at top
+// Simple square on pole - RED
 
 interface BicingMarkersProps {
   positions: [number, number, number][];
-  poleColor?: string;
-  iconColor?: string;
+  color?: string;
   poleHeight?: number;
 }
 
 export function BicingMarkers({
   positions,
-  poleColor = COLORS.red600,
-  iconColor = COLORS.red500,
-  poleHeight = 35,
+  color = COLORS.red500,
+  poleHeight = 30,
 }: BicingMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
-  const wheelRef = useRef<THREE.InstancedMesh>(null);
-  const hubRef = useRef<THREE.InstancedMesh>(null);
-
-  // Torus geometry for bike wheel - simplified
-  const wheelGeometry = useMemo(() => {
-    return new THREE.TorusGeometry(6, 1.2, 6, 12);
-  }, []);
+  const squareRef = useRef<THREE.InstancedMesh>(null);
 
   useEffect(() => {
-    if (!poleRef.current || !wheelRef.current || !hubRef.current || positions.length === 0) return;
+    if (!poleRef.current || !squareRef.current || positions.length === 0) return;
 
     const tempObject = new THREE.Object3D();
 
     positions.forEach((pos, i) => {
-      // Tall thin pole
+      // Pole
       tempObject.position.set(pos[0], pos[1], poleHeight / 2);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
-      // Bike wheel (torus) at top - rotated to face outward - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 8);
-      tempObject.rotation.set(Math.PI / 2, 0, 0);
+      // Square at top
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
+      tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
-      wheelRef.current!.setMatrixAt(i, tempObject.matrix);
-
-      // Hub center - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 8);
-      tempObject.rotation.set(Math.PI / 2, 0, 0);
-      tempObject.scale.set(1, 1, 1);
-      tempObject.updateMatrix();
-      hubRef.current!.setMatrixAt(i, tempObject.matrix);
+      squareRef.current!.setMatrixAt(i, tempObject.matrix);
     });
 
     poleRef.current.instanceMatrix.needsUpdate = true;
-    wheelRef.current.instanceMatrix.needsUpdate = true;
-    hubRef.current.instanceMatrix.needsUpdate = true;
+    squareRef.current.instanceMatrix.needsUpdate = true;
   }, [positions, poleHeight]);
 
   if (positions.length === 0) return null;
 
   return (
     <>
-      {/* Poles */}
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
-        <meshBasicMaterial color={poleColor} />
+        <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
+        <meshBasicMaterial color={color} />
       </instancedMesh>
-
-      {/* Bike wheel */}
-      <instancedMesh ref={wheelRef} args={[wheelGeometry, undefined, positions.length]} frustumCulled>
-        <meshBasicMaterial color={iconColor} />
-      </instancedMesh>
-
-      {/* Wheel hub */}
-      <instancedMesh ref={hubRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <circleGeometry args={[2.5, 6]} />
-        <meshBasicMaterial color={COLORS.white} />
+      <instancedMesh ref={squareRef} args={[undefined, undefined, positions.length]} frustumCulled>
+        <planeGeometry args={[8, 8]} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </instancedMesh>
     </>
   );
 }
 
 // ============ TRAFFIC VIOLATION MARKERS ============
-// Warning triangle/diamond markers
+// Simple triangle on pole - YELLOW
 
 interface TrafficViolationMarkersProps {
   positions: [number, number, number][];
-  poleColor?: string;
-  iconColor?: string;
+  color?: string;
   poleHeight?: number;
 }
 
 export function TrafficViolationMarkers({
   positions,
-  poleColor = COLORS.yellow500,
-  iconColor = COLORS.yellow400,
+  color = COLORS.yellow400,
   poleHeight = 30,
 }: TrafficViolationMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
-  const diamondRef = useRef<THREE.InstancedMesh>(null);
-  const exclamationRef = useRef<THREE.InstancedMesh>(null);
+  const triangleRef = useRef<THREE.InstancedMesh>(null);
 
-  // Diamond/warning shape - LARGE
-  const diamondGeometry = useMemo(() => {
+  // Triangle geometry
+  const triangleGeometry = useMemo(() => {
     const shape = new THREE.Shape();
-    shape.moveTo(0, 6);
-    shape.lineTo(6, 0);
-    shape.lineTo(0, -6);
-    shape.lineTo(-6, 0);
+    shape.moveTo(0, 5);
+    shape.lineTo(5, -3);
+    shape.lineTo(-5, -3);
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
   }, []);
 
   useEffect(() => {
-    if (!poleRef.current || !diamondRef.current || !exclamationRef.current || positions.length === 0) return;
+    if (!poleRef.current || !triangleRef.current || positions.length === 0) return;
 
     const tempObject = new THREE.Object3D();
 
     positions.forEach((pos, i) => {
-      // Thin pole
+      // Pole
       tempObject.position.set(pos[0], pos[1], poleHeight / 2);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
-      // Warning diamond at top - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 8);
+      // Triangle at top
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
-      diamondRef.current!.setMatrixAt(i, tempObject.matrix);
-
-      // Exclamation mark - LARGE
-      tempObject.position.set(pos[0], pos[1], poleHeight + 8);
-      tempObject.rotation.set(0, 0, 0);
-      tempObject.scale.set(1, 1, 1);
-      tempObject.updateMatrix();
-      exclamationRef.current!.setMatrixAt(i, tempObject.matrix);
+      triangleRef.current!.setMatrixAt(i, tempObject.matrix);
     });
 
     poleRef.current.instanceMatrix.needsUpdate = true;
-    diamondRef.current.instanceMatrix.needsUpdate = true;
-    exclamationRef.current.instanceMatrix.needsUpdate = true;
+    triangleRef.current.instanceMatrix.needsUpdate = true;
   }, [positions, poleHeight]);
 
   if (positions.length === 0) return null;
 
   return (
     <>
-      {/* Poles */}
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <cylinderGeometry args={[0.8, 0.8, poleHeight, 4]} />
-        <meshBasicMaterial color={poleColor} />
+        <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
+        <meshBasicMaterial color={color} />
       </instancedMesh>
-
-      {/* Warning diamond */}
-      <instancedMesh ref={diamondRef} args={[diamondGeometry, undefined, positions.length]} frustumCulled>
-        <meshBasicMaterial color={iconColor} side={THREE.DoubleSide} />
-      </instancedMesh>
-
-      {/* Exclamation mark */}
-      <instancedMesh ref={exclamationRef} args={[undefined, undefined, positions.length]} frustumCulled>
-        <boxGeometry args={[1.5, 1.5, 5]} />
-        <meshBasicMaterial color={COLORS.slate700} />
+      <instancedMesh ref={triangleRef} args={[triangleGeometry, undefined, positions.length]} frustumCulled>
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
       </instancedMesh>
     </>
   );
@@ -280,7 +205,7 @@ interface ParkingMarkersProps {
 
 export function ParkingMarkers({
   startPositions,
-  color = COLORS.cyan500,
+  color = COLORS.blue500,
 }: ParkingMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const signRef = useRef<THREE.InstancedMesh>(null);
@@ -316,13 +241,10 @@ export function ParkingMarkers({
 
   return (
     <>
-      {/* Poles */}
       <instancedMesh ref={poleRef} args={[undefined, undefined, startPositions.length]}>
         <cylinderGeometry args={[0.25, 0.25, poleHeight, 6]} />
         <meshBasicMaterial color={color} />
       </instancedMesh>
-
-      {/* P sign circle */}
       <instancedMesh ref={signRef} args={[undefined, undefined, startPositions.length]}>
         <circleGeometry args={[2, 16]} />
         <meshBasicMaterial color={color} side={THREE.DoubleSide} />
@@ -332,7 +254,7 @@ export function ParkingMarkers({
 }
 
 // ============ TREE MARKERS ============
-// Stylized tree markers (taller, more visible)
+// Stylized tree markers
 
 interface TreeMarkersProps {
   positions: [number, number, number][];
@@ -342,7 +264,7 @@ interface TreeMarkersProps {
 
 export function TreeMarkers({
   positions,
-  trunkColor = COLORS.orange600,
+  trunkColor = '#8b5a2b',
   canopyColor = COLORS.green500,
 }: TreeMarkersProps) {
   const trunkRef = useRef<THREE.InstancedMesh>(null);
@@ -384,13 +306,10 @@ export function TreeMarkers({
 
   return (
     <>
-      {/* Trunks */}
       <instancedMesh ref={trunkRef} args={[undefined, undefined, positions.length]}>
         <cylinderGeometry args={[0.5, 0.7, trunkHeight, 6]} />
         <meshBasicMaterial color={trunkColor} />
       </instancedMesh>
-
-      {/* Canopies */}
       <instancedMesh ref={canopyRef} args={[undefined, undefined, positions.length]}>
         <sphereGeometry args={[canopyRadius, 8, 6]} />
         <meshBasicMaterial color={canopyColor} />

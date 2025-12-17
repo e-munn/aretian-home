@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayerAnimation } from '@/hooks/useLayerAnimation';
+import { LoadingLegend } from '@/components/city/LoadingLegend';
 import dynamic from 'next/dynamic';
 
 const CityScene = dynamic(() => import('@/components/CityScene'), {
@@ -8,14 +8,10 @@ const CityScene = dynamic(() => import('@/components/CityScene'), {
 });
 
 export function CitySection() {
-  const { layers } = useLayerAnimation({
-    staggerDelay: 350,
-    initialDelay: 300,
-  });
-
   return (
     <div className="relative w-full h-full">
-      <CityScene layers={layers} />
+      <CityScene />
+      <LoadingLegend />
     </div>
   );
 }

@@ -1,204 +1,180 @@
-import { Node, Edge } from '@xyflow/react';
+import { Node, Edge, MarkerType } from '@xyflow/react';
 import { ServiceNodeData } from './ServiceNode';
 import { GroupNodeData } from './GroupNode';
 
-// Colors
+// Colors - Process-focused palette
 const COLORS = {
-  clients: '#61dafb',
-  frontend: '#61dafb',
-  backend: '#3ecf8e',
-  external: '#f97316',
-  data: '#a855f7',
-  analytics: '#00C217',
+  collection: '#61dafb',    // Cyan - gathering/intake
+  analysis: '#a855f7',      // Purple - processing/insight
+  deployment: '#3ecf8e',    // Green - output/delivery
+  flow: '#ffffff',          // White - main flow
 };
 
-// Node positions
+// Vertical top-down layout for process flow
 const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
-  // Groups
+  // === COLLECTION GROUP (Top) ===
   {
-    id: 'group-clients',
+    id: 'group-collection',
     type: 'group',
-    position: { x: 0, y: 0 },
-    data: { label: 'Clients', color: COLORS.clients },
-    style: { width: 280, height: 80 },
+    position: { x: 120, y: 0 },
+    data: { label: 'Collection', color: COLORS.collection },
+    style: { width: 460, height: 120, border: `1px solid ${COLORS.collection}30`, borderRadius: '20px', backgroundColor: 'transparent' },
   },
   {
-    id: 'group-frontend',
-    type: 'group',
-    position: { x: 0, y: 120 },
-    data: { label: 'Frontend', color: COLORS.frontend },
-    style: { width: 500, height: 100 },
-  },
-  {
-    id: 'group-backend',
-    type: 'group',
-    position: { x: 0, y: 260 },
-    data: { label: 'Backend Services', color: COLORS.backend },
-    style: { width: 500, height: 100 },
-  },
-  {
-    id: 'group-data',
-    type: 'group',
-    position: { x: 0, y: 400 },
-    data: { label: 'Data & Analytics', color: COLORS.data },
-    style: { width: 500, height: 100 },
-  },
-  {
-    id: 'group-external',
-    type: 'group',
-    position: { x: 560, y: 120 },
-    data: { label: 'External APIs', color: COLORS.external },
-    style: { width: 180, height: 240 },
-  },
-
-  // Client nodes
-  {
-    id: 'browser',
+    id: 'urban-data',
     type: 'service',
-    position: { x: 20, y: 35 },
-    data: { label: 'Browser', icon: 'globe', color: COLORS.clients },
-    parentId: 'group-clients',
+    position: { x: 20, y: 45 },
+    data: { label: 'Urban Data', description: 'City infrastructure', icon: 'map', color: COLORS.collection },
+    parentId: 'group-collection',
     extent: 'parent',
   },
   {
-    id: 'mobile',
+    id: 'spatial-feeds',
     type: 'service',
-    position: { x: 150, y: 35 },
-    data: { label: 'Mobile', icon: 'globe', color: COLORS.clients, disabled: true },
-    parentId: 'group-clients',
+    position: { x: 170, y: 45 },
+    data: { label: 'Spatial Feeds', description: 'GIS & satellite', icon: 'globe', color: COLORS.collection },
+    parentId: 'group-collection',
+    extent: 'parent',
+  },
+  {
+    id: 'mobility-data',
+    type: 'service',
+    position: { x: 320, y: 45 },
+    data: { label: 'Mobility', description: 'Transit & flows', icon: 'layers', color: COLORS.collection },
+    parentId: 'group-collection',
     extent: 'parent',
   },
 
-  // Frontend nodes
+  // === ANALYSIS GROUP (Middle) ===
   {
-    id: 'nextjs',
+    id: 'group-analysis',
+    type: 'group',
+    position: { x: 120, y: 180 },
+    data: { label: 'Analysis', color: COLORS.analysis },
+    style: { width: 460, height: 120, border: `1px solid ${COLORS.analysis}30`, borderRadius: '20px', backgroundColor: 'transparent' },
+  },
+  {
+    id: 'pattern-detection',
     type: 'service',
-    position: { x: 20, y: 40 },
-    data: { label: 'Next.js', description: 'React Framework', icon: 'layers', color: COLORS.frontend },
-    parentId: 'group-frontend',
+    position: { x: 20, y: 45 },
+    data: { label: 'Patterns', description: 'Network analysis', icon: 'chart', color: COLORS.analysis },
+    parentId: 'group-analysis',
     extent: 'parent',
   },
   {
-    id: 'mapbox',
+    id: 'simulation',
     type: 'service',
-    position: { x: 180, y: 40 },
-    data: { label: 'Mapbox GL', description: '3D Maps', icon: 'map', color: COLORS.frontend },
-    parentId: 'group-frontend',
+    position: { x: 170, y: 45 },
+    data: { label: 'Simulation', description: 'Urban models', icon: 'brain', color: COLORS.analysis },
+    parentId: 'group-analysis',
     extent: 'parent',
   },
   {
-    id: 'threejs',
+    id: 'optimization',
     type: 'service',
-    position: { x: 340, y: 40 },
-    data: { label: 'Three.js', description: '3D Graphics', icon: 'box', color: COLORS.frontend },
-    parentId: 'group-frontend',
-    extent: 'parent',
-  },
-
-  // Backend nodes
-  {
-    id: 'vercel',
-    type: 'service',
-    position: { x: 20, y: 40 },
-    data: { label: 'Vercel', description: 'Hosting', icon: 'cloud', color: COLORS.backend },
-    parentId: 'group-backend',
-    extent: 'parent',
-  },
-  {
-    id: 'supabase',
-    type: 'service',
-    position: { x: 180, y: 40 },
-    data: { label: 'Supabase', description: 'Database', icon: 'database', color: COLORS.backend },
-    parentId: 'group-backend',
-    extent: 'parent',
-  },
-  {
-    id: 'api',
-    type: 'service',
-    position: { x: 340, y: 40 },
-    data: { label: 'API Routes', description: 'Serverless', icon: 'server', color: COLORS.backend },
-    parentId: 'group-backend',
+    position: { x: 320, y: 45 },
+    data: { label: 'Optimization', description: 'Resource allocation', icon: 'server', color: COLORS.analysis },
+    parentId: 'group-analysis',
     extent: 'parent',
   },
 
-  // Data & Analytics nodes
+  // === DEPLOYMENT GROUP (Bottom) ===
   {
-    id: 'bigquery',
+    id: 'group-deployment',
+    type: 'group',
+    position: { x: 120, y: 360 },
+    data: { label: 'Deployment', color: COLORS.deployment },
+    style: { width: 460, height: 120, border: `1px solid ${COLORS.deployment}30`, borderRadius: '20px', backgroundColor: 'transparent' },
+  },
+  {
+    id: 'digital-twin',
     type: 'service',
-    position: { x: 20, y: 40 },
-    data: { label: 'BigQuery', description: 'Data Warehouse', icon: 'database', color: COLORS.data },
-    parentId: 'group-data',
+    position: { x: 20, y: 45 },
+    data: { label: 'Digital Twin', description: '3D city models', icon: 'box', color: COLORS.deployment },
+    parentId: 'group-deployment',
     extent: 'parent',
   },
   {
-    id: 'analytics',
+    id: 'dashboards',
     type: 'service',
-    position: { x: 180, y: 40 },
-    data: { label: 'Analytics Engine', description: 'Urban Metrics', icon: 'chart', color: COLORS.analytics },
-    parentId: 'group-data',
+    position: { x: 170, y: 45 },
+    data: { label: 'Dashboards', description: 'KPI tracking', icon: 'chart', color: COLORS.deployment },
+    parentId: 'group-deployment',
     extent: 'parent',
   },
   {
-    id: 'ml',
+    id: 'recommendations',
     type: 'service',
-    position: { x: 340, y: 40 },
-    data: { label: 'ML Models', description: 'Predictions', icon: 'brain', color: COLORS.data },
-    parentId: 'group-data',
-    extent: 'parent',
-  },
-
-  // External API nodes
-  {
-    id: 'mapbox-api',
-    type: 'service',
-    position: { x: 20, y: 40 },
-    data: { label: 'Mapbox', icon: 'map', color: COLORS.external },
-    parentId: 'group-external',
-    extent: 'parent',
-  },
-  {
-    id: 'opendata',
-    type: 'service',
-    position: { x: 20, y: 110 },
-    data: { label: 'Open Data', icon: 'database', color: COLORS.external },
-    parentId: 'group-external',
-    extent: 'parent',
-  },
-  {
-    id: 'osm',
-    type: 'service',
-    position: { x: 20, y: 180 },
-    data: { label: 'OpenStreetMap', icon: 'globe', color: COLORS.external },
-    parentId: 'group-external',
+    position: { x: 320, y: 45 },
+    data: { label: 'Insights', description: 'Action plans', icon: 'layers', color: COLORS.deployment },
+    parentId: 'group-deployment',
     extent: 'parent',
   },
 ];
 
-// Edges
+// Edges - Top-down flow
 const edges: Edge[] = [
-  // Client to Frontend
-  { id: 'e-browser-nextjs', source: 'browser', target: 'nextjs', animated: true, style: { stroke: COLORS.clients } },
+  // Collection to Analysis (vertical flow)
+  {
+    id: 'e-urban-patterns',
+    source: 'urban-data',
+    target: 'pattern-detection',
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
+  {
+    id: 'e-spatial-simulation',
+    source: 'spatial-feeds',
+    target: 'simulation',
+    animated: true,
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
+  {
+    id: 'e-mobility-optimization',
+    source: 'mobility-data',
+    target: 'optimization',
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
 
-  // Frontend connections
-  { id: 'e-nextjs-mapbox', source: 'nextjs', target: 'mapbox', style: { stroke: COLORS.frontend } },
-  { id: 'e-nextjs-threejs', source: 'nextjs', target: 'threejs', style: { stroke: COLORS.frontend } },
+  // Analysis to Deployment (vertical flow)
+  {
+    id: 'e-patterns-twin',
+    source: 'pattern-detection',
+    target: 'digital-twin',
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
+  {
+    id: 'e-simulation-dashboards',
+    source: 'simulation',
+    target: 'dashboards',
+    animated: true,
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
+  {
+    id: 'e-optimization-insights',
+    source: 'optimization',
+    target: 'recommendations',
+    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
+  },
 
-  // Frontend to Backend
-  { id: 'e-nextjs-vercel', source: 'nextjs', target: 'vercel', animated: true, style: { stroke: COLORS.backend } },
-  { id: 'e-nextjs-api', source: 'nextjs', target: 'api', style: { stroke: COLORS.backend } },
-
-  // Backend connections
-  { id: 'e-api-supabase', source: 'api', target: 'supabase', style: { stroke: COLORS.backend } },
-
-  // Backend to Data
-  { id: 'e-supabase-bigquery', source: 'supabase', target: 'bigquery', style: { stroke: COLORS.data } },
-  { id: 'e-api-analytics', source: 'api', target: 'analytics', animated: true, style: { stroke: COLORS.analytics } },
-  { id: 'e-analytics-ml', source: 'analytics', target: 'ml', style: { stroke: COLORS.data } },
-
-  // External API connections
-  { id: 'e-mapbox-mapboxapi', source: 'mapbox', target: 'mapbox-api', style: { stroke: COLORS.external } },
-  { id: 'e-bigquery-opendata', source: 'bigquery', target: 'opendata', style: { stroke: COLORS.external } },
-  { id: 'e-bigquery-osm', source: 'bigquery', target: 'osm', style: { stroke: COLORS.external } },
+  // Cross-connections within groups (subtle)
+  {
+    id: 'e-patterns-simulation',
+    source: 'pattern-detection',
+    target: 'simulation',
+    style: { stroke: COLORS.analysis, strokeWidth: 1, strokeDasharray: '4 4' },
+  },
+  {
+    id: 'e-simulation-optimization',
+    source: 'simulation',
+    target: 'optimization',
+    style: { stroke: COLORS.analysis, strokeWidth: 1, strokeDasharray: '4 4' },
+  },
 ];
 
 export { nodes, edges, COLORS };

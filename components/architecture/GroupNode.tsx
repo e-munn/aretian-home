@@ -13,18 +13,28 @@ function GroupNodeComponent({ data }: NodeProps) {
   const { label, color = '#3ecf8e' } = nodeData;
 
   return (
-    <div
-      className="rounded-xl border border-white/10 bg-white/5 min-w-[200px] min-h-[100px]"
-      style={{
-        borderTopColor: color,
-        borderTopWidth: 3,
-      }}
-    >
+    <div>
+      {/* Header bar only - no background */}
       <div
-        className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-t-lg"
-        style={{ color }}
+        style={{
+          backgroundColor: `${color}25`,
+          borderBottom: `2px solid ${color}50`,
+          borderRadius: '16px 16px 0 0',
+          padding: '12px 24px',
+          backdropFilter: 'blur(8px)',
+        }}
       >
-        {label}
+        <span
+          style={{
+            fontSize: '12px',
+            fontWeight: 700,
+            color: color,
+            textTransform: 'uppercase',
+            letterSpacing: '2px',
+          }}
+        >
+          {label}
+        </span>
       </div>
     </div>
   );

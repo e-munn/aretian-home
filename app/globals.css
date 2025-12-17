@@ -8,6 +8,7 @@
   --primary: #00C217;
   --accent: #00C217;
   --muted: #DBDBDB;
+  --font-sans: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 html, body {
@@ -81,4 +82,10 @@ html, body {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+/* ReactFlow group node - remove default background */
+.react-flow__node-group {
+  background: transparent !important;
+  background-color: transparent !important;
 }
