@@ -1,6 +1,7 @@
 'use client';
 
 import { LogoMarquee } from '@/components/ui/LogoMarquee';
+import { Visible } from '@/components/layout/Visible';
 
 interface TeamMember {
   name: string;
@@ -41,46 +42,58 @@ const teamMembers: TeamMember[] = [
 
 export function TeamSection() {
   return (
-    <div className="w-full h-full bg-transparent flex items-center justify-center p-8 md:p-16">
-      <div className="max-w-5xl w-full">
-        <h2 className="text-3xl md:text-4xl font-medium text-white mb-2 font-google">Our Team</h2>
-        <p className="text-white/50 mb-10 font-google">
-          Harvard-based researchers and practitioners in urban science
-        </p>
+    <section
+      id="team"
+      style={{
+        width: '100%',
+        height: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <Visible>
+        <div className="w-full h-full bg-transparent flex items-center justify-center p-8 md:p-16 overflow-y-auto">
+          <div className="max-w-5xl w-full">
+            <h2 className="text-3xl md:text-4xl font-medium text-white mb-2 font-google">Our Team</h2>
+            <p className="text-white/50 mb-10 font-google">
+              Harvard-based researchers and practitioners in urban science
+            </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teamMembers.map((member) => (
-            <div
-              key={member.name}
-              className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
-            >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#424162] to-[#2a2a4a] mb-4 flex items-center justify-center text-white/70 text-lg font-medium">
-                {member.name.split(' ').map(n => n[0]).join('')}
-              </div>
-              <h3 className="text-white font-medium text-lg font-google">{member.name}</h3>
-              <p className="text-[#00C217] text-sm mb-2 font-google">{member.role}</p>
-              {member.location && (
-                <p className="text-white/30 text-xs mb-2 font-google">{member.location}</p>
-              )}
-              <p className="text-white/50 text-sm leading-relaxed font-google">{member.bio}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {teamMembers.map((member) => (
+                <div
+                  key={member.name}
+                  className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#424162] to-[#2a2a4a] mb-4 flex items-center justify-center text-white/70 text-lg font-medium">
+                    {member.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <h3 className="text-white font-medium text-lg font-google">{member.name}</h3>
+                  <p className="text-[#00C217] text-sm mb-2 font-google">{member.role}</p>
+                  {member.location && (
+                    <p className="text-white/30 text-xs mb-2 font-google">{member.location}</p>
+                  )}
+                  <p className="text-white/50 text-sm leading-relaxed font-google">{member.bio}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="mt-10 text-center">
-          <p className="text-white/30 text-sm font-google">
-            Founded 2018 at Harvard School of Engineering and Applied Sciences
-          </p>
-        </div>
+            <div className="mt-10 text-center">
+              <p className="text-white/30 text-sm font-google">
+                Founded 2018 at Harvard School of Engineering and Applied Sciences
+              </p>
+            </div>
 
-        <div className="mt-16">
-          <h3 className="text-xl font-medium text-white mb-2 font-google">Partners & Clients</h3>
-          <p className="text-white/40 text-sm mb-6 font-google">
-            Organizations we've worked with
-          </p>
-          <LogoMarquee velocity={30} logoSize={60} rows={2} />
+            <div className="mt-16">
+              <h3 className="text-xl font-medium text-white mb-2 font-google">Partners & Clients</h3>
+              <p className="text-white/40 text-sm mb-6 font-google">
+                Organizations we've worked with
+              </p>
+              <LogoMarquee velocity={30} logoSize={60} rows={2} />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </Visible>
+    </section>
   );
 }

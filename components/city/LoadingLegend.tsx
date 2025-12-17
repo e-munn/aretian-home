@@ -20,14 +20,15 @@ const MagnetContext = createContext<MagnetContextType>({
   setActiveId: () => {},
 });
 
-// Calculate the reveal delay for a set of layers (find the group they belong to)
+// Calculate the reveal delay for a set of layers (use the MAX delay since isRevealed waits for ALL)
 function getRevealDelay(layers: LayerKey[]): number {
+  let maxDelay = 0;
   for (const group of REVEAL_SEQUENCE) {
     if (layers.some(l => group.layers.includes(l))) {
-      return group.delay;
+      maxDelay = Math.max(maxDelay, group.delay);
     }
   }
-  return 0;
+  return maxDelay;
 }
 
 // Circular progress ring component
@@ -141,32 +142,33 @@ function LoadingIcon({
       return;
     }
 
-    // If this layer reveals immediately or no start time yet, skip animation
-    if (revealDelay === 0 || startTime === null) {
+    // If this layer reveals immediately, show full progress
+    if (revealDelay === 0) {
+      setProgress(1);
       return;
     }
 
-    // Animate progress from 0 to ~95% based on elapsed time since reveal started
+    // No start time yet - wait
+    if (startTime === null) {
+      return;
+    }
+
+    // Animate progress from 0 to 100% based on elapsed time
+    let rafId: number;
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const p = Math.min(0.95, elapsed / revealDelay);
+      // Progress reaches 100% exactly at revealDelay
+      const p = Math.min(1, elapsed / revealDelay);
       setProgress(p);
 
-      if (p < 0.95 && !isRevealed) {
-        requestAnimationFrame(animate);
+      if (elapsed < revealDelay && !isRevealed) {
+        rafId = requestAnimationFrame(animate);
       }
     };
 
-    requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
 
-    // Keep animating
-    const interval = setInterval(() => {
-      if (!isRevealed) {
-        requestAnimationFrame(animate);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
+    return () => cancelAnimationFrame(rafId);
   }, [isRevealed, revealDelay, startTime]);
 
   // Reset pulse after animation

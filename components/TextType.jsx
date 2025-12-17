@@ -35,6 +35,14 @@ const TextType = ({
 
   const textArray = useMemo(() => (Array.isArray(text) ? text : [text]), [text]);
 
+  // Reset state when text changes
+  useEffect(() => {
+    setDisplayedText('');
+    setCurrentCharIndex(0);
+    setIsDeleting(false);
+    setCurrentTextIndex(0);
+  }, [text]);
+
   const getRandomSpeed = useCallback(() => {
     if (!variableSpeed) return typingSpeed;
     const { min, max } = variableSpeed;

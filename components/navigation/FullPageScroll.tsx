@@ -81,10 +81,11 @@ interface SectionProps {
 }
 
 function Section({ id, children, scrollProgress, isActive }: SectionProps) {
-  // Calculate blur and opacity based on scroll progress
-  const blur = Math.min(scrollProgress * 12, 12); // Max 12px blur
-  const opacity = 1 - scrollProgress * 0.4; // Fade to 60% opacity
-  const scale = 1 - scrollProgress * 0.05; // Slight scale down
+  // Calculate blur and opacity based on scroll progress - exaggerated for dramatic effect
+  const blur = Math.min(scrollProgress * 35, 35); // Max 35px blur for dramatic effect
+  const opacity = 1 - scrollProgress * 0.6; // Fade to 40% opacity
+  const scale = 1 - scrollProgress * 0.08; // More noticeable scale down
+  const translateY = scrollProgress * -30; // Slight upward drift as it blurs
 
   return (
     <section
@@ -93,8 +94,8 @@ function Section({ id, children, scrollProgress, isActive }: SectionProps) {
       style={{
         filter: scrollProgress > 0 ? `blur(${blur}px)` : 'none',
         opacity: isActive ? 1 : opacity,
-        transform: `scale(${scale})`,
-        transition: 'filter 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out',
+        transform: `scale(${scale}) translateY(${translateY}px)`,
+        transition: 'filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out',
       }}
     >
       {children}
