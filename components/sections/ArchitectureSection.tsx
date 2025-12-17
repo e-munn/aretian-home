@@ -13,6 +13,7 @@ import '@xyflow/react/dist/style.css';
 import { ServiceNode } from '@/components/architecture/ServiceNode';
 import { GroupNode } from '@/components/architecture/GroupNode';
 import { nodes as initialNodes, edges as initialEdges } from '@/components/architecture/data';
+import { Visible } from '@/components/layout/Visible';
 
 const nodeTypes = {
   service: ServiceNode,
@@ -28,10 +29,9 @@ function ArchitectureFlow() {
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      fitView
-      fitViewOptions={{ padding: 0.2 }}
-      minZoom={1.5}
-      maxZoom={1.5}
+      defaultViewport={{ x: 100, y: 50, zoom: 1.2 }}
+      minZoom={1.2}
+      maxZoom={1.2}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
@@ -56,18 +56,13 @@ function ArchitectureFlow() {
 export function ArchitectureSection() {
   return (
     <div className="w-full h-full bg-[#0a0a0a] relative">
-      {/* Header */}
-      <div className="absolute top-8 left-16 z-10">
-        <h2 className="text-3xl font-light text-white/90 mb-1">Our Process</h2>
-        <p className="text-lg text-white/50">From urban data to actionable insights</p>
-      </div>
-
-      {/* Flow Diagram */}
-      <div className="w-full h-full pt-20 pointer-events-none">
-        <ReactFlowProvider>
-          <ArchitectureFlow />
-        </ReactFlowProvider>
-      </div>
+      <Visible>
+        <div className="w-full h-full pointer-events-none">
+          <ReactFlowProvider>
+            <ArchitectureFlow />
+          </ReactFlowProvider>
+        </div>
+      </Visible>
     </div>
   );
 }

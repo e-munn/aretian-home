@@ -10,20 +10,20 @@ const COLORS = {
   flow: '#ffffff',          // White - main flow
 };
 
-// Vertical top-down layout for process flow
+// Vertical top-down layout for process flow - spacious layout
 const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   // === COLLECTION GROUP (Top) ===
   {
     id: 'group-collection',
     type: 'group',
-    position: { x: 120, y: 0 },
+    position: { x: 100, y: 0 },
     data: { label: 'Collection', color: COLORS.collection },
-    style: { width: 460, height: 120, border: `1px solid ${COLORS.collection}30`, borderRadius: '20px', backgroundColor: 'transparent' },
+    style: { width: 580, height: 150, border: `1px solid ${COLORS.collection}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'urban-data',
     type: 'service',
-    position: { x: 20, y: 45 },
+    position: { x: 30, y: 55 },
     data: { label: 'Urban Data', description: 'City infrastructure', icon: 'map', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -31,7 +31,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'spatial-feeds',
     type: 'service',
-    position: { x: 170, y: 45 },
+    position: { x: 210, y: 55 },
     data: { label: 'Spatial Feeds', description: 'GIS & satellite', icon: 'globe', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -39,7 +39,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'mobility-data',
     type: 'service',
-    position: { x: 320, y: 45 },
+    position: { x: 390, y: 55 },
     data: { label: 'Mobility', description: 'Transit & flows', icon: 'layers', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -49,14 +49,14 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'group-analysis',
     type: 'group',
-    position: { x: 120, y: 180 },
+    position: { x: 100, y: 220 },
     data: { label: 'Analysis', color: COLORS.analysis },
-    style: { width: 460, height: 120, border: `1px solid ${COLORS.analysis}30`, borderRadius: '20px', backgroundColor: 'transparent' },
+    style: { width: 580, height: 150, border: `1px solid ${COLORS.analysis}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'pattern-detection',
     type: 'service',
-    position: { x: 20, y: 45 },
+    position: { x: 30, y: 55 },
     data: { label: 'Patterns', description: 'Network analysis', icon: 'chart', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -64,7 +64,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'simulation',
     type: 'service',
-    position: { x: 170, y: 45 },
+    position: { x: 210, y: 55 },
     data: { label: 'Simulation', description: 'Urban models', icon: 'brain', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -72,7 +72,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'optimization',
     type: 'service',
-    position: { x: 320, y: 45 },
+    position: { x: 390, y: 55 },
     data: { label: 'Optimization', description: 'Resource allocation', icon: 'server', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -82,14 +82,14 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'group-deployment',
     type: 'group',
-    position: { x: 120, y: 360 },
+    position: { x: 100, y: 440 },
     data: { label: 'Deployment', color: COLORS.deployment },
-    style: { width: 460, height: 120, border: `1px solid ${COLORS.deployment}30`, borderRadius: '20px', backgroundColor: 'transparent' },
+    style: { width: 580, height: 150, border: `1px solid ${COLORS.deployment}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'digital-twin',
     type: 'service',
-    position: { x: 20, y: 45 },
+    position: { x: 30, y: 55 },
     data: { label: 'Digital Twin', description: '3D city models', icon: 'box', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
@@ -97,7 +97,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'dashboards',
     type: 'service',
-    position: { x: 170, y: 45 },
+    position: { x: 210, y: 55 },
     data: { label: 'Dashboards', description: 'KPI tracking', icon: 'chart', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
@@ -105,7 +105,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'recommendations',
     type: 'service',
-    position: { x: 320, y: 45 },
+    position: { x: 390, y: 55 },
     data: { label: 'Insights', description: 'Action plans', icon: 'layers', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
