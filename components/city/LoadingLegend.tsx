@@ -318,7 +318,7 @@ export function LoadingLegend() {
             </div>
 
             {/* Icon row: evenly spaced [Roads] [Trees] [Data+subs] [Buildings] */}
-            <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm rounded-full px-5 py-3" style={{ minWidth: 360 }}>
+            <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm rounded-full px-8 py-3" style={{ minWidth: 420 }}>
               {/* Roads */}
               <LoadingIcon
                 id="roads"
@@ -338,7 +338,7 @@ export function LoadingLegend() {
               />
 
               {/* Data group - pill wrapping main icon + sub-icons */}
-              <div className="flex items-center gap-2 bg-white/5 rounded-full pl-1 pr-2 py-1">
+              <div className="flex items-center gap-3 bg-white/5 rounded-full pl-2 pr-3 py-1">
                 <LoadingIcon
                   id="data"
                   icon={Database}
@@ -346,7 +346,7 @@ export function LoadingLegend() {
                   label="Data"
                   layers={['parking', 'bikeLanes', 'busStops', 'bicingStations', 'trafficViolations', 'flowParticles']}
                 />
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {DATA_SUB_ICONS.map(({ id, icon, color, label, layers }) => (
                     <LoadingIcon
                       key={id}

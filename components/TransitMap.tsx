@@ -1,10 +1,22 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { CityConfig, CITIES } from '@/lib/cities';
 import * as THREE from 'three';
+
+// Animation config
+const DROP_HEIGHT = 150;
+const ANIMATION_DURATION = 0.5; // seconds
+const STAGGER_DELAY = 0.003; // seconds between each point
+
+// Ease out back for bounce effect
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
 
 // Transit stop data
 interface TransitStop {
@@ -19,31 +31,6 @@ function project(lon: number, lat: number, center: { lat: number; lon: number })
   const x = (lon - center.lon) * 111000 * Math.cos(center.lat * Math.PI / 180);
   const y = (lat - center.lat) * 111000;
   return [x, y];
-}
-
-// Load water polygons
-async function fetchWater(center: { lat: number; lon: number }): Promise<[number, number][][]> {
-  const response = await fetch('/data/boston/water.json');
-  if (!response.ok) return [];
-  const data = await response.json();
-
-  const nodes: Record<number, { lon: number; lat: number }> = {};
-  const polygons: [number, number][][] = [];
-
-  for (const el of data.elements) {
-    if (el.type === 'node') nodes[el.id] = { lon: el.lon, lat: el.lat };
-  }
-
-  for (const el of data.elements) {
-    if (el.type !== 'way' || !el.nodes) continue;
-    const path = el.nodes
-      .map((id: number) => nodes[id])
-      .filter(Boolean)
-      .map((n: { lon: number; lat: number }) => project(n.lon, n.lat, center));
-    if (path.length >= 3) polygons.push(path);
-  }
-
-  return polygons;
 }
 
 // Load roads for a city
@@ -80,29 +67,6 @@ async function fetchTransitStops(config: CityConfig): Promise<TransitStop[]> {
   return response.json();
 }
 
-// Water polygons layer
-function WaterLayer({ polygons }: { polygons: [number, number][][] }) {
-  return (
-    <group>
-      {polygons.map((points, i) => {
-        const shape = new THREE.Shape();
-        shape.moveTo(points[0][0], points[0][1]);
-        for (let j = 1; j < points.length; j++) {
-          shape.lineTo(points[j][0], points[j][1]);
-        }
-        shape.closePath();
-
-        return (
-          <mesh key={i} position={[0, 0, -1]}>
-            <shapeGeometry args={[shape]} />
-            <meshBasicMaterial color="#1a3a5c" transparent opacity={0.6} />
-          </mesh>
-        );
-      })}
-    </group>
-  );
-}
-
 // Reference roads layer
 function RoadsLayer({ roads }: { roads: [number, number][][] }) {
   return (
@@ -119,7 +83,181 @@ function RoadsLayer({ roads }: { roads: [number, number][][] }) {
   );
 }
 
-// Transit stops visualization
+// Animated pulsating point
+function AnimatedPoint({
+  x,
+  y,
+  radius,
+  intensity,
+  color,
+  glowColor,
+  pulseSpeed,
+  staggerIndex,
+  animationStartTime,
+}: {
+  x: number;
+  y: number;
+  radius: number;
+  intensity: number;
+  color: string;
+  glowColor: string;
+  pulseSpeed: number;
+  staggerIndex: number;
+  animationStartTime: number;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const mainRef = useRef<THREE.Mesh>(null);
+  const animationComplete = useRef(false);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current || !glowRef.current || !mainRef.current) return;
+
+    const elapsed = clock.elapsedTime - animationStartTime;
+    const delay = staggerIndex * STAGGER_DELAY;
+    const localTime = Math.max(0, elapsed - delay);
+    const dropProgress = Math.min(1, localTime / ANIMATION_DURATION);
+
+    if (dropProgress < 1) {
+      // Drop animation
+      const eased = easeOutBack(dropProgress);
+      const zOffset = DROP_HEIGHT * (1 - eased);
+      groupRef.current.position.z = zOffset;
+
+      // Fade in during drop
+      const opacity = dropProgress;
+      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = intensity * 0.15 * opacity;
+      (mainRef.current.material as THREE.MeshBasicMaterial).opacity = (0.4 + intensity * 0.4) * opacity;
+    } else {
+      // Animation complete - start pulsing
+      groupRef.current.position.z = 0;
+
+      if (!animationComplete.current) {
+        animationComplete.current = true;
+      }
+
+      // Pulsating effect
+      const pulseTime = (localTime - ANIMATION_DURATION) * pulseSpeed;
+      const pulse = 0.85 + Math.sin(pulseTime) * 0.15;
+      const glowPulse = 0.7 + Math.sin(pulseTime + Math.PI / 4) * 0.3;
+
+      // Scale pulse
+      mainRef.current.scale.setScalar(pulse);
+      glowRef.current.scale.setScalar(glowPulse);
+
+      // Opacity pulse
+      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = intensity * 0.15 * glowPulse;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[x, y, DROP_HEIGHT]}>
+      {intensity > 0.3 && (
+        <mesh ref={glowRef} position={[0, 0, 0.5]}>
+          <circleGeometry args={[radius * 1.5, 24]} />
+          <meshBasicMaterial color={glowColor} transparent opacity={0} />
+        </mesh>
+      )}
+      <mesh ref={mainRef} position={[0, 0, 1]}>
+        <circleGeometry args={[radius, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={0} />
+      </mesh>
+      <mesh position={[0, 0, 2]}>
+        <circleGeometry args={[3, 12]} />
+        <meshBasicMaterial color={glowColor} />
+      </mesh>
+    </group>
+  );
+}
+
+// Animated metro point with ring
+function AnimatedMetroPoint({
+  x,
+  y,
+  radius,
+  intensity,
+  staggerIndex,
+  animationStartTime,
+}: {
+  x: number;
+  y: number;
+  radius: number;
+  intensity: number;
+  staggerIndex: number;
+  animationStartTime: number;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const outerRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const innerRef = useRef<THREE.Mesh>(null);
+  const animationComplete = useRef(false);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current || !outerRef.current || !ringRef.current || !innerRef.current) return;
+
+    const elapsed = clock.elapsedTime - animationStartTime;
+    const delay = staggerIndex * STAGGER_DELAY;
+    const localTime = Math.max(0, elapsed - delay);
+    const dropProgress = Math.min(1, localTime / ANIMATION_DURATION);
+
+    if (dropProgress < 1) {
+      // Drop animation
+      const eased = easeOutBack(dropProgress);
+      const zOffset = DROP_HEIGHT * (1 - eased);
+      groupRef.current.position.z = zOffset;
+
+      // Fade in during drop
+      const opacity = dropProgress;
+      (outerRef.current.material as THREE.MeshBasicMaterial).opacity = (0.1 + intensity * 0.1) * opacity;
+      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = (0.3 + intensity * 0.3) * opacity;
+      (innerRef.current.material as THREE.MeshBasicMaterial).opacity = (0.7 + intensity * 0.3) * opacity;
+    } else {
+      // Animation complete - start pulsing
+      groupRef.current.position.z = 0;
+
+      if (!animationComplete.current) {
+        animationComplete.current = true;
+      }
+
+      // Pulsating effect - slightly different speeds for each layer
+      const pulseTime = (localTime - ANIMATION_DURATION) * 2.5;
+      const outerPulse = 0.9 + Math.sin(pulseTime * 0.8) * 0.1;
+      const ringPulse = 0.85 + Math.sin(pulseTime + Math.PI / 3) * 0.15;
+      const innerPulse = 0.9 + Math.sin(pulseTime * 1.2) * 0.1;
+
+      outerRef.current.scale.setScalar(outerPulse);
+      ringRef.current.scale.setScalar(ringPulse);
+      innerRef.current.scale.setScalar(innerPulse);
+
+      // Opacity pulse
+      (outerRef.current.material as THREE.MeshBasicMaterial).opacity = (0.1 + intensity * 0.1) * outerPulse;
+      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = (0.3 + intensity * 0.3) * ringPulse;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={[x, y, DROP_HEIGHT]}>
+      <mesh ref={outerRef} position={[0, 0, 0.3]}>
+        <circleGeometry args={[radius * 2, 32]} />
+        <meshBasicMaterial color="#f97316" transparent opacity={0} />
+      </mesh>
+      <mesh ref={ringRef} position={[0, 0, 0.6]}>
+        <ringGeometry args={[radius * 0.7, radius, 32]} />
+        <meshBasicMaterial color="#fb923c" transparent opacity={0} />
+      </mesh>
+      <mesh ref={innerRef} position={[0, 0, 1.5]}>
+        <circleGeometry args={[radius * 0.5, 24]} />
+        <meshBasicMaterial color="#ea580c" transparent opacity={0} />
+      </mesh>
+      <mesh position={[0, 0, 2.5]} rotation={[0, 0, Math.PI / 4]}>
+        <planeGeometry args={[12, 12]} />
+        <meshBasicMaterial color="#fff7ed" />
+      </mesh>
+    </group>
+  );
+}
+
+// Transit stops visualization with animations
 function TransitLayer({
   stops,
   maxTrips,
@@ -129,65 +267,82 @@ function TransitLayer({
   maxTrips: number;
   center: { lat: number; lon: number };
 }) {
-  const busStops = useMemo(() => stops.filter(s => s.type === 'bus'), [stops]);
-  const metroStops = useMemo(() => stops.filter(s => s.type === 'metro' || s.type === 'rail'), [stops]);
+  const startTimeRef = useRef<number | null>(null);
+  const [startTime, setStartTime] = useState(0);
+
+  // Sort stops by distance from center for radial animation
+  const sortedBusStops = useMemo(() => {
+    const busStops = stops.filter(s => s.type === 'bus');
+    return busStops
+      .map((stop, originalIndex) => {
+        const [x, y] = project(stop.lon, stop.lat, center);
+        const dist = Math.sqrt(x * x + y * y);
+        return { stop, x, y, dist, originalIndex };
+      })
+      .sort((a, b) => a.dist - b.dist);
+  }, [stops, center]);
+
+  const sortedMetroStops = useMemo(() => {
+    const metroStops = stops.filter(s => s.type === 'metro' || s.type === 'rail');
+    return metroStops
+      .map((stop, originalIndex) => {
+        const [x, y] = project(stop.lon, stop.lat, center);
+        const dist = Math.sqrt(x * x + y * y);
+        return { stop, x, y, dist, originalIndex };
+      })
+      .sort((a, b) => a.dist - b.dist);
+  }, [stops, center]);
 
   const getIntensity = (trips: number) => Math.min(1, trips / maxTrips);
   const getRadius = (trips: number) => 8 + getIntensity(trips) * 40;
 
+  // Capture start time on first frame
+  useFrame(({ clock }) => {
+    if (startTimeRef.current === null) {
+      startTimeRef.current = clock.elapsedTime;
+      setStartTime(clock.elapsedTime);
+    }
+  });
+
   return (
     <group>
       {/* Bus stops */}
-      {busStops.map((stop, i) => {
-        const [x, y] = project(stop.lon, stop.lat, center);
+      {sortedBusStops.map(({ stop, x, y }, staggerIndex) => {
         const radius = getRadius(stop.trips);
         const intensity = getIntensity(stop.trips);
+        const pulseSpeed = 2 + intensity * 2; // Faster pulse for busier stops
 
         return (
-          <group key={`bus-${i}`}>
-            {intensity > 0.3 && (
-              <mesh position={[x, y, 0.5]}>
-                <circleGeometry args={[radius * 1.5, 24]} />
-                <meshBasicMaterial color="#3b82f6" transparent opacity={intensity * 0.15} />
-              </mesh>
-            )}
-            <mesh position={[x, y, 1]}>
-              <circleGeometry args={[radius, 24]} />
-              <meshBasicMaterial color="#3b82f6" transparent opacity={0.4 + intensity * 0.4} />
-            </mesh>
-            <mesh position={[x, y, 2]}>
-              <circleGeometry args={[3, 12]} />
-              <meshBasicMaterial color="#60a5fa" />
-            </mesh>
-          </group>
+          <AnimatedPoint
+            key={`bus-${staggerIndex}`}
+            x={x}
+            y={y}
+            radius={radius}
+            intensity={intensity}
+            color="#3b82f6"
+            glowColor="#60a5fa"
+            pulseSpeed={pulseSpeed}
+            staggerIndex={staggerIndex}
+            animationStartTime={startTime}
+          />
         );
       })}
 
-      {/* Metro/Rail stops */}
-      {metroStops.map((stop, i) => {
-        const [x, y] = project(stop.lon, stop.lat, center);
+      {/* Metro/Rail stops - start after bus stops with offset */}
+      {sortedMetroStops.map(({ stop, x, y }, staggerIndex) => {
         const radius = getRadius(stop.trips) * 1.5;
         const intensity = getIntensity(stop.trips);
 
         return (
-          <group key={`metro-${i}`}>
-            <mesh position={[x, y, 0.3]}>
-              <circleGeometry args={[radius * 2, 32]} />
-              <meshBasicMaterial color="#f97316" transparent opacity={0.1 + intensity * 0.1} />
-            </mesh>
-            <mesh position={[x, y, 0.6]}>
-              <ringGeometry args={[radius * 0.7, radius, 32]} />
-              <meshBasicMaterial color="#fb923c" transparent opacity={0.3 + intensity * 0.3} />
-            </mesh>
-            <mesh position={[x, y, 1.5]}>
-              <circleGeometry args={[radius * 0.5, 24]} />
-              <meshBasicMaterial color="#ea580c" transparent opacity={0.7 + intensity * 0.3} />
-            </mesh>
-            <mesh position={[x, y, 2.5]} rotation={[0, 0, Math.PI / 4]}>
-              <planeGeometry args={[12, 12]} />
-              <meshBasicMaterial color="#fff7ed" />
-            </mesh>
-          </group>
+          <AnimatedMetroPoint
+            key={`metro-${staggerIndex}`}
+            x={x}
+            y={y}
+            radius={radius}
+            intensity={intensity}
+            staggerIndex={staggerIndex + sortedBusStops.length} // Offset after bus stops
+            animationStartTime={startTime}
+          />
         );
       })}
     </group>
@@ -239,7 +394,6 @@ interface TransitMapProps {
 
 export default function TransitMap({ className }: TransitMapProps) {
   const [roads, setRoads] = useState<[number, number][][]>([]);
-  const [water, setWater] = useState<[number, number][][]>([]);
   const [stops, setStops] = useState<TransitStop[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -251,11 +405,9 @@ export default function TransitMap({ className }: TransitMapProps) {
     Promise.all([
       fetchRoads(city),
       fetchTransitStops(city),
-      fetchWater(city.center)
-    ]).then(([roadsData, stopsData, waterData]) => {
+    ]).then(([roadsData, stopsData]) => {
       setRoads(roadsData);
       setStops(stopsData);
-      setWater(waterData);
       setLoading(false);
     });
   }, [city]);
@@ -274,7 +426,6 @@ export default function TransitMap({ className }: TransitMapProps) {
       >
         <CameraSetup baseZoom={city.zoom} />
         <group rotation={[0, 0, city.rotation]}>
-          <WaterLayer polygons={water} />
           <RoadsLayer roads={roads} />
           {!loading && <TransitLayer stops={stops} maxTrips={maxTrips} center={city.center} />}
         </group>

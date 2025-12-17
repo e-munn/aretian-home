@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export interface NavSection {
   id: string;
@@ -32,18 +32,7 @@ const FONTS = [
 ];
 
 export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' }: SideNavProps) {
-  const [fontIndex, setFontIndex] = useState(2); // Outfit
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const fontKey = FONTS.findIndex(f => f.key === e.key);
-      if (fontKey !== -1) {
-        setFontIndex(fontKey);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  const [fontIndex] = useState(5); // Albert Sans - fixed font
 
   const currentFont = FONTS[fontIndex];
 
@@ -78,7 +67,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                   animate={{ color: textColor }}
                   transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                   style={{
-                    fontSize: index === 0 ? 'clamp(5rem, 12vw, 10rem)' : 'clamp(4rem, 10vw, 8rem)',
+                    fontSize: index === 0 ? 'clamp(4rem, 10vw, 8rem)' : 'clamp(3rem, 8vw, 6rem)',
                     lineHeight: 0.85,
                     letterSpacing: index === 0 ? '0.15em' : 'normal',
                     fontWeight: index === 0 ? 800 : 600,

@@ -14,7 +14,7 @@ export type LayerKey =
   | 'buildings';
 
 // Reveal sequence - fast staged reveal for immediate visual impact
-// Total time: ~4.5 seconds
+// Total time: ~6 seconds
 export const REVEAL_SEQUENCE: { layers: LayerKey[]; delay: number }[] = [
   { layers: ['grid', 'roads'], delay: 0 },           // Roads - immediate
   { layers: ['trees'], delay: 500 },                 // Trees - 0.5s
@@ -23,7 +23,7 @@ export const REVEAL_SEQUENCE: { layers: LayerKey[]; delay: number }[] = [
   { layers: ['bicingStations'], delay: 2600 },       // Data sub 2 - 2.6s
   { layers: ['trafficViolations'], delay: 3400 },    // Data sub 3 - 3.4s
   { layers: ['flowParticles'], delay: 4200 },        // Data sub 4 - 4.2s
-  { layers: ['buildings'], delay: 4700 },            // Buildings - 4.7s
+  { layers: ['buildings'], delay: 5800 },            // Buildings - 5.8s (more delay after data)
 ];
 
 interface LayerState {

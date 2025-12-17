@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Tailwind colors
@@ -11,6 +12,18 @@ export const COLORS = {
   green500: '#22c55e',
   white: '#ffffff',
 };
+
+// Shared animation config
+const DROP_HEIGHT = 80;
+const ANIMATION_DURATION = 0.6; // seconds
+const STAGGER_DELAY = 0.002; // seconds between each marker
+
+// Ease out back for bounce effect
+function easeOutBack(t: number): number {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
 
 // ============ BUS STOP MARKERS ============
 // Simple circle on pole - BLUE
@@ -30,22 +43,54 @@ export function BusStopMarkers({
 }: BusStopMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const circleRef = useRef<THREE.InstancedMesh>(null);
+  const startTime = useRef<number | null>(null);
+  const animationComplete = useRef(false);
 
-  useEffect(() => {
+  // Sort positions by distance from center for radial stagger effect
+  const sortedIndices = useMemo(() => {
+    return positions
+      .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
+      .sort((a, b) => a.dist - b.dist)
+      .map((item) => item.i);
+  }, [positions]);
+
+  useFrame(({ clock }) => {
     if (!poleRef.current || !circleRef.current || positions.length === 0) return;
 
+    // Initialize start time
+    if (startTime.current === null) {
+      startTime.current = clock.elapsedTime;
+    }
+
+    // Skip if animation is complete
+    if (animationComplete.current) return;
+
+    const elapsed = clock.elapsedTime - startTime.current;
     const tempObject = new THREE.Object3D();
+    let allComplete = true;
 
     positions.forEach((pos, i) => {
+      // Get stagger order from sorted indices
+      const staggerOrder = sortedIndices.indexOf(i);
+      const delay = staggerOrder * STAGGER_DELAY;
+      const localTime = Math.max(0, elapsed - delay);
+      const progress = Math.min(1, localTime / ANIMATION_DURATION);
+      const eased = easeOutBack(progress);
+
+      if (progress < 1) allComplete = false;
+
+      // Calculate z offset (drop from above)
+      const zOffset = DROP_HEIGHT * (1 - eased);
+
       // Pole
-      tempObject.position.set(pos[0], pos[1], poleHeight / 2);
+      tempObject.position.set(pos[0], pos[1], poleHeight / 2 + zOffset);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
       // Circle at top
-      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4 + zOffset);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
@@ -54,7 +99,11 @@ export function BusStopMarkers({
 
     poleRef.current.instanceMatrix.needsUpdate = true;
     circleRef.current.instanceMatrix.needsUpdate = true;
-  }, [positions, poleHeight]);
+
+    if (allComplete) {
+      animationComplete.current = true;
+    }
+  });
 
   if (positions.length === 0) return null;
 
@@ -90,22 +139,50 @@ export function BicingMarkers({
 }: BicingMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const squareRef = useRef<THREE.InstancedMesh>(null);
+  const startTime = useRef<number | null>(null);
+  const animationComplete = useRef(false);
 
-  useEffect(() => {
+  // Sort positions by distance from center for radial stagger effect
+  const sortedIndices = useMemo(() => {
+    return positions
+      .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
+      .sort((a, b) => a.dist - b.dist)
+      .map((item) => item.i);
+  }, [positions]);
+
+  useFrame(({ clock }) => {
     if (!poleRef.current || !squareRef.current || positions.length === 0) return;
 
+    if (startTime.current === null) {
+      startTime.current = clock.elapsedTime;
+    }
+
+    if (animationComplete.current) return;
+
+    const elapsed = clock.elapsedTime - startTime.current;
     const tempObject = new THREE.Object3D();
+    let allComplete = true;
 
     positions.forEach((pos, i) => {
+      const staggerOrder = sortedIndices.indexOf(i);
+      const delay = staggerOrder * STAGGER_DELAY;
+      const localTime = Math.max(0, elapsed - delay);
+      const progress = Math.min(1, localTime / ANIMATION_DURATION);
+      const eased = easeOutBack(progress);
+
+      if (progress < 1) allComplete = false;
+
+      const zOffset = DROP_HEIGHT * (1 - eased);
+
       // Pole
-      tempObject.position.set(pos[0], pos[1], poleHeight / 2);
+      tempObject.position.set(pos[0], pos[1], poleHeight / 2 + zOffset);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
       // Square at top
-      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4 + zOffset);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
@@ -114,7 +191,11 @@ export function BicingMarkers({
 
     poleRef.current.instanceMatrix.needsUpdate = true;
     squareRef.current.instanceMatrix.needsUpdate = true;
-  }, [positions, poleHeight]);
+
+    if (allComplete) {
+      animationComplete.current = true;
+    }
+  });
 
   if (positions.length === 0) return null;
 
@@ -150,6 +231,8 @@ export function TrafficViolationMarkers({
 }: TrafficViolationMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const triangleRef = useRef<THREE.InstancedMesh>(null);
+  const startTime = useRef<number | null>(null);
+  const animationComplete = useRef(false);
 
   // Triangle geometry
   const triangleGeometry = useMemo(() => {
@@ -161,21 +244,47 @@ export function TrafficViolationMarkers({
     return new THREE.ShapeGeometry(shape);
   }, []);
 
-  useEffect(() => {
+  // Sort positions by distance from center for radial stagger effect
+  const sortedIndices = useMemo(() => {
+    return positions
+      .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
+      .sort((a, b) => a.dist - b.dist)
+      .map((item) => item.i);
+  }, [positions]);
+
+  useFrame(({ clock }) => {
     if (!poleRef.current || !triangleRef.current || positions.length === 0) return;
 
+    if (startTime.current === null) {
+      startTime.current = clock.elapsedTime;
+    }
+
+    if (animationComplete.current) return;
+
+    const elapsed = clock.elapsedTime - startTime.current;
     const tempObject = new THREE.Object3D();
+    let allComplete = true;
 
     positions.forEach((pos, i) => {
+      const staggerOrder = sortedIndices.indexOf(i);
+      const delay = staggerOrder * STAGGER_DELAY;
+      const localTime = Math.max(0, elapsed - delay);
+      const progress = Math.min(1, localTime / ANIMATION_DURATION);
+      const eased = easeOutBack(progress);
+
+      if (progress < 1) allComplete = false;
+
+      const zOffset = DROP_HEIGHT * (1 - eased);
+
       // Pole
-      tempObject.position.set(pos[0], pos[1], poleHeight / 2);
+      tempObject.position.set(pos[0], pos[1], poleHeight / 2 + zOffset);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
       // Triangle at top
-      tempObject.position.set(pos[0], pos[1], poleHeight + 4);
+      tempObject.position.set(pos[0], pos[1], poleHeight + 4 + zOffset);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
@@ -184,7 +293,11 @@ export function TrafficViolationMarkers({
 
     poleRef.current.instanceMatrix.needsUpdate = true;
     triangleRef.current.instanceMatrix.needsUpdate = true;
-  }, [positions, poleHeight]);
+
+    if (allComplete) {
+      animationComplete.current = true;
+    }
+  });
 
   if (positions.length === 0) return null;
 
@@ -215,24 +328,52 @@ export function ParkingMarkers({
 }: ParkingMarkersProps) {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const signRef = useRef<THREE.InstancedMesh>(null);
+  const startTime = useRef<number | null>(null);
+  const animationComplete = useRef(false);
 
   const poleHeight = 28;
 
-  useEffect(() => {
+  // Sort positions by distance from center for radial stagger effect
+  const sortedIndices = useMemo(() => {
+    return startPositions
+      .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
+      .sort((a, b) => a.dist - b.dist)
+      .map((item) => item.i);
+  }, [startPositions]);
+
+  useFrame(({ clock }) => {
     if (!poleRef.current || !signRef.current || startPositions.length === 0) return;
 
+    if (startTime.current === null) {
+      startTime.current = clock.elapsedTime;
+    }
+
+    if (animationComplete.current) return;
+
+    const elapsed = clock.elapsedTime - startTime.current;
     const tempObject = new THREE.Object3D();
+    let allComplete = true;
 
     startPositions.forEach((pos, i) => {
+      const staggerOrder = sortedIndices.indexOf(i);
+      const delay = staggerOrder * STAGGER_DELAY;
+      const localTime = Math.max(0, elapsed - delay);
+      const progress = Math.min(1, localTime / ANIMATION_DURATION);
+      const eased = easeOutBack(progress);
+
+      if (progress < 1) allComplete = false;
+
+      const zOffset = DROP_HEIGHT * (1 - eased);
+
       // Pole
-      tempObject.position.set(pos[0], pos[1], poleHeight / 2);
+      tempObject.position.set(pos[0], pos[1], poleHeight / 2 + zOffset);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
       poleRef.current!.setMatrixAt(i, tempObject.matrix);
 
       // P sign (circle)
-      tempObject.position.set(pos[0], pos[1], poleHeight + 1.5);
+      tempObject.position.set(pos[0], pos[1], poleHeight + 1.5 + zOffset);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(1, 1, 1);
       tempObject.updateMatrix();
@@ -241,7 +382,11 @@ export function ParkingMarkers({
 
     poleRef.current.instanceMatrix.needsUpdate = true;
     signRef.current.instanceMatrix.needsUpdate = true;
-  }, [startPositions]);
+
+    if (allComplete) {
+      animationComplete.current = true;
+    }
+  });
 
   if (startPositions.length === 0) return null;
 
@@ -275,29 +420,57 @@ export function TreeMarkers({
 }: TreeMarkersProps) {
   const trunkRef = useRef<THREE.InstancedMesh>(null);
   const canopyRef = useRef<THREE.InstancedMesh>(null);
+  const startTime = useRef<number | null>(null);
+  const animationComplete = useRef(false);
 
   const trunkHeight = 12;
   const canopyRadius = 5;
 
-  useEffect(() => {
+  // Sort positions by distance from center for radial stagger effect
+  const sortedIndices = useMemo(() => {
+    return positions
+      .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
+      .sort((a, b) => a.dist - b.dist)
+      .map((item) => item.i);
+  }, [positions]);
+
+  useFrame(({ clock }) => {
     if (!trunkRef.current || !canopyRef.current || positions.length === 0) return;
 
+    if (startTime.current === null) {
+      startTime.current = clock.elapsedTime;
+    }
+
+    if (animationComplete.current) return;
+
+    const elapsed = clock.elapsedTime - startTime.current;
     const tempObject = new THREE.Object3D();
     const seed = (i: number) => ((i * 127) % 100) / 100;
+    let allComplete = true;
 
     positions.forEach((pos, i) => {
+      const staggerOrder = sortedIndices.indexOf(i);
+      const delay = staggerOrder * STAGGER_DELAY;
+      const localTime = Math.max(0, elapsed - delay);
+      const progress = Math.min(1, localTime / ANIMATION_DURATION);
+      const eased = easeOutBack(progress);
+
+      if (progress < 1) allComplete = false;
+
+      const zOffset = DROP_HEIGHT * (1 - eased);
+
       const heightVar = 0.8 + seed(i) * 0.4;
       const canopyVar = 0.8 + seed(i + 50) * 0.4;
 
       // Trunk
-      tempObject.position.set(pos[0], pos[1], (trunkHeight * heightVar) / 2);
+      tempObject.position.set(pos[0], pos[1], (trunkHeight * heightVar) / 2 + zOffset);
       tempObject.rotation.set(Math.PI / 2, 0, 0);
       tempObject.scale.set(1, 1, heightVar);
       tempObject.updateMatrix();
       trunkRef.current!.setMatrixAt(i, tempObject.matrix);
 
       // Canopy (sphere)
-      tempObject.position.set(pos[0], pos[1], trunkHeight * heightVar + canopyRadius * canopyVar * 0.6);
+      tempObject.position.set(pos[0], pos[1], trunkHeight * heightVar + canopyRadius * canopyVar * 0.6 + zOffset);
       tempObject.rotation.set(0, 0, 0);
       tempObject.scale.set(canopyVar, canopyVar, canopyVar * 0.7);
       tempObject.updateMatrix();
@@ -306,7 +479,11 @@ export function TreeMarkers({
 
     trunkRef.current.instanceMatrix.needsUpdate = true;
     canopyRef.current.instanceMatrix.needsUpdate = true;
-  }, [positions]);
+
+    if (allComplete) {
+      animationComplete.current = true;
+    }
+  });
 
   if (positions.length === 0) return null;
 

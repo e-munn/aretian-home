@@ -52,8 +52,8 @@ export function TeamSection() {
       }}
     >
       <Visible>
-        <div className="w-full h-full bg-transparent flex items-center justify-center p-8 md:p-16 overflow-y-auto">
-          <div className="max-w-5xl w-full">
+        <div className="w-full h-full bg-transparent flex items-start justify-center p-8 md:p-16 overflow-y-auto">
+          <div className="max-w-5xl w-full pb-16">
             <h2 className="text-3xl md:text-4xl font-medium text-white mb-2 font-google">Our Team</h2>
             <p className="text-white/50 mb-10 font-google">
               Harvard-based researchers and practitioners in urban science
@@ -84,12 +84,13 @@ export function TeamSection() {
               </p>
             </div>
 
-            <div className="mt-16">
-              <h3 className="text-xl font-medium text-white mb-2 font-google">Partners & Clients</h3>
-              <p className="text-white/40 text-sm mb-6 font-google">
+            {/* Partners & Clients - prominent section */}
+            <div className="mt-16 pt-8 border-t border-white/10">
+              <h3 className="text-2xl md:text-3xl font-medium text-white mb-3 font-google">Partners & Clients</h3>
+              <p className="text-white/40 text-sm mb-8 font-google">
                 Organizations we've worked with
               </p>
-              <LogoMarquee velocity={30} logoSize={60} rows={2} />
+              <LogoMarquee velocity={25} logoSize={90} rows={2} />
             </div>
           </div>
         </div>
