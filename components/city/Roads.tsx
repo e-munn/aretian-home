@@ -70,7 +70,7 @@ interface FlowParticlesProps {
   opacity?: number;
 }
 
-export function FlowParticles({ roads, color = '#f97316', opacity = 0.6 }: FlowParticlesProps) {
+export function FlowParticles({ roads, color = '#cc7000', opacity = 0.9 }: FlowParticlesProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObject = useMemo(() => new THREE.Object3D(), []);
 
@@ -116,12 +116,12 @@ export function FlowParticles({ roads, color = '#f97316', opacity = 0.6 }: FlowP
             pos = [
               path[i][0] + (path[i + 1][0] - path[i][0]) * t,
               path[i][1] + (path[i + 1][1] - path[i][1]) * t,
-              0.1,
+              5,
             ];
             break;
           }
           targetDist -= segLengths[i];
-          pos = [path[i + 1][0], path[i + 1][1], 0.1];
+          pos = [path[i + 1][0], path[i + 1][1], 5];
         }
 
         tempObject.position.set(pos[0], pos[1], pos[2]);
@@ -135,9 +135,9 @@ export function FlowParticles({ roads, color = '#f97316', opacity = 0.6 }: FlowP
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, particleCount]} frustumCulled>
-      <circleGeometry args={[4, 8]} />
-      <meshBasicMaterial color={new THREE.Color(color)} transparent opacity={opacity} />
+    <instancedMesh ref={meshRef} args={[undefined, undefined, particleCount]} frustumCulled={false} renderOrder={0}>
+      <circleGeometry args={[3, 12]} />
+      <meshBasicMaterial color={new THREE.Color(color)} transparent opacity={opacity} depthTest={true} />
     </instancedMesh>
   );
 }

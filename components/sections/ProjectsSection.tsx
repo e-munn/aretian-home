@@ -5,21 +5,35 @@ import dynamic from 'next/dynamic';
 const CardSwap = dynamic(() => import('@/components/ui/CardSwap'), { ssr: false });
 const Card = dynamic(() => import('@/components/ui/CardSwap').then(mod => ({ default: mod.Card })), { ssr: false });
 
+// Real Aretian projects from https://www.aretian.com/projects
 const PROJECTS = [
   {
-    name: 'Barcelona Housing',
-    description: 'Comprehensive affordable housing analysis using urban analytics to identify optimal locations and policy interventions.',
-    tags: ['Urban Analytics', 'Housing'],
+    name: 'Barcelona Metropolitan Digital Twin',
+    description: 'State-of-the-art City Digital Twin revolutionizing urban optimization. Simulates infrastructure, socio-economic dynamics, mobility, and land use across 36 municipalities with NVIDIA and Lenovo collaboration.',
+    tags: ['Digital Twin', 'City Science'],
+    image: '/projects/barcelona-digital-twin.jpg',
+    link: 'https://www.aretian.com/visionforbarcelona',
   },
   {
-    name: 'Smart Mobility',
-    description: 'Transportation network optimization through machine learning and real-time data integration.',
-    tags: ['Network Analysis', 'Digital Twin'],
+    name: 'Global Cities Study',
+    description: 'In-depth research with IESE Business School analyzing Amsterdam, Boston, Barcelona, Munich, and Stockholm. Reveals urban design can boost economic output by over 80% and increase property value.',
+    tags: ['Urban Analytics', 'Research'],
+    image: '/projects/global-cities.jpg',
+    link: 'https://www.aretian.com/projects-1/global-cities-study:-amsterdam,-boston,-barcelona,-munich,-stockholm',
   },
   {
-    name: 'Urban Renewal',
-    description: 'City center revitalization master plan combining economic development with sustainable design.',
-    tags: ['Master Planning', 'Economic Dev'],
+    name: 'Spanish Innovation Districts',
+    description: 'Knowledge economy analysis for Madrid, Barcelona, and Bilbao. Strategic framework to foster 4-5 innovation districts where universities and industries coexist through institutional links.',
+    tags: ['Innovation', 'Economic Dev'],
+    image: '/projects/spanish-cities.jpg',
+    link: 'https://www.aretian.com/our-work',
+  },
+  {
+    name: 'Massachusetts Port Authority',
+    description: 'Urban analytics consulting for strategic port development and regional economic integration with the Greater Boston metropolitan area.',
+    tags: ['Consulting', 'Master Planning'],
+    image: '/projects/massport.jpg',
+    link: 'https://www.aretian.com/our-work',
   },
 ];
 
@@ -32,7 +46,7 @@ export function ProjectsSection() {
         height: '100vh',
         position: 'relative',
         overflow: 'hidden',
-        background: '#0f0f1a',
+        background: 'transparent',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
@@ -43,7 +57,7 @@ export function ProjectsSection() {
         <CardSwap
           cardDistance={40}
           verticalDistance={50}
-          delay={4000}
+          delay={5000}
           pauseOnHover={true}
         >
           {PROJECTS.map((project) => (
@@ -61,12 +75,17 @@ export function ProjectsSection() {
                     ))}
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-3">{project.name}</h3>
-                  <p className="text-white/60 leading-relaxed">{project.description}</p>
+                  <p className="text-white/60 leading-relaxed text-sm">{project.description}</p>
                 </div>
                 <div className="mt-6">
-                  <span className="text-sm text-[#3b82f6] hover:text-[#60a5fa] cursor-pointer">
+                  <a
+                    href={project.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#00C217] hover:text-[#00e01b] transition-colors"
+                  >
                     View case study →
-                  </span>
+                  </a>
                 </div>
               </div>
             </Card>

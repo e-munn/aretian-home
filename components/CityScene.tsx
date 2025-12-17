@@ -3,75 +3,27 @@
 import { useState, useEffect } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useLayerStore } from '@/stores/layerStore'
 
 // City components
-import { DotGrid, GRID_ANGLE } from './city/Grid'
-import { Roads, FlowParticles, RoadData } from './city/Roads'
-import { InstancedPalmTrees, fetchBarcelonaTrees } from './city/Trees'
-import { DetailedBuildings, fetchOvertureBuildings, BuildingData } from './city/Buildings'
-import {
-  ParkingZones,
-  BikeLanes,
-  fetchBusStops,
-  fetchBicingStations,
-  fetchTrafficViolations,
-  fetchParkingZones,
-  fetchBikeLanes,
-  BusStopData,
-  BicingStationData,
-  TrafficViolationData,
-  ParkingZoneData,
-  BikeLaneData,
-} from './city/Infrastructure'
+import { DotGrid, GRID_ANGLE, GRID_EXTENTS } from './city/Grid'
+import { Roads, FlowParticles } from './city/Roads'
+import { InstancedPalmTrees } from './city/Trees'
+import { DetailedBuildings } from './city/Buildings'
+import { ParkingZones, BikeLanes } from './city/Infrastructure'
 import { BusStopMarkers, BicingMarkers, TrafficViolationMarkers } from './city/Markers'
-import { fetchOSMData, parseRoads } from './city/data'
+import { useCityData, CityData } from '@/hooks/useCityData'
+import { useLayerStore, LayerKey } from '@/stores/layerStore'
+import ColorPicker from './ui/ColorPicker'
 
 // Visual settings
 const BG_COLOR = '#0f0f1a'
-const BUILDING_COLOR = '#18182b'
+const BUILDING_COLOR = '#3c324e'
 const BUILDING_OPACITY = 0.87
 
-// Layer visibility for animations
-export interface LayerVisibility {
-  grid: boolean
-  roads: boolean
-  buildings: boolean
-  trees: boolean
-  parking: boolean
-  bikeLanes: boolean
-  busStops: boolean
-  bicingStations: boolean
-  trafficViolations: boolean
-  flowParticles: boolean
-}
-
-const ALL_VISIBLE: LayerVisibility = {
-  grid: true,
-  roads: true,
-  buildings: true,
-  trees: true,
-  parking: true,
-  bikeLanes: true,
-  busStops: true,
-  bicingStations: true,
-  trafficViolations: true,
-  flowParticles: true,
-}
-
 // Scene
-interface SceneProps {
-  roads: RoadData[]
-  trees: [number, number, number][]
-  buildings: BuildingData[]
-  busStops: BusStopData[]
-  bicingStations: BicingStationData[]
-  trafficViolations: TrafficViolationData[]
-  parkingZones: ParkingZoneData[]
-  bikeLanes: BikeLaneData[]
-  layers: LayerVisibility
+interface SceneProps extends CityData {
+  revealed: Record<LayerKey, boolean>
   buildingColor: string
-  buildingOpacity: number
 }
 
 function Scene({
@@ -83,9 +35,8 @@ function Scene({
   trafficViolations,
   parkingZones,
   bikeLanes,
-  layers,
+  revealed,
   buildingColor,
-  buildingOpacity,
 }: SceneProps) {
   const { camera, size } = useThree()
   const [baseOffset, setBaseOffset] = useState({ x: 0, y: 0 })
@@ -93,6 +44,13 @@ function Scene({
   const dist = 500
   const orbitAngle = Math.PI / 4
   const elevation = Math.atan(1 / Math.sqrt(2))
+
+  // Determine grid extent based on canvas size (more reliable than window.innerWidth in Three.js)
+  const gridExtent = size.width > 1400
+    ? GRID_EXTENTS.large
+    : size.width > 900
+      ? GRID_EXTENTS.medium
+      : GRID_EXTENTS.small
 
   // Calculate responsive offset and zoom based on viewport
   useEffect(() => {
@@ -157,149 +115,45 @@ function Scene({
 
   return (
     <group rotation={[0, 0, -GRID_ANGLE]} position={[0, 0, -40]}>
-      {layers.grid && <DotGrid color="#596689" activeColor="#c5c9d6" opacity={0.6} />}
-      {layers.roads && <Roads roads={roads} />}
-      {layers.parking && <ParkingZones zones={parkingZones} opacity={0.6} />}
-      {layers.bikeLanes && <BikeLanes lanes={bikeLanes} color='#44cc66' lineWidth={2} />}
-      {layers.trees && <InstancedPalmTrees positions={trees} />}
-      {layers.buildings && (
+      {revealed.grid && <DotGrid color="#596689" opacity={0.7} extent={gridExtent} />}
+      {revealed.roads && <Roads roads={roads} />}
+      {revealed.parking && <ParkingZones zones={parkingZones} opacity={0.6} />}
+      {revealed.bikeLanes && <BikeLanes lanes={bikeLanes} color='#44cc66' lineWidth={2} />}
+      {revealed.trees && <InstancedPalmTrees positions={trees} />}
+      {revealed.flowParticles && <FlowParticles roads={roads} />}
+      {revealed.buildings && (
         <DetailedBuildings
           buildings={buildings}
           color={buildingColor}
-          fillOpacity={buildingOpacity}
+          fillOpacity={BUILDING_OPACITY}
           edgeOpacity={0}
         />
       )}
-      {layers.busStops && <BusStopMarkers positions={busStops.map((s) => s.position)} />}
-      {layers.bicingStations && <BicingMarkers positions={bicingStations.map((s) => s.position)} />}
-      {layers.trafficViolations && <TrafficViolationMarkers positions={trafficViolations.map((v) => v.position)} />}
-      {layers.flowParticles && <FlowParticles roads={roads} />}
+      {revealed.busStops && <BusStopMarkers positions={busStops.map((s) => s.position)} />}
+      {revealed.bicingStations && <BicingMarkers positions={bicingStations.map((s) => s.position)} />}
+      {revealed.trafficViolations && <TrafficViolationMarkers positions={trafficViolations.map((v) => v.position)} />}
     </group>
   )
 }
 
 // Main component
-interface CitySceneProps {
-  layers?: Partial<LayerVisibility>
-}
+export default function CityScene() {
+  // Use the centralized data loading hook
+  const { data } = useCityData()
+  const { roads, trees, buildings, busStops, bicingStations, trafficViolations, parkingZones, bikeLanes } = data
 
-export default function CityScene({ layers: layerOverrides }: CitySceneProps = {}) {
-  const [roads, setRoads] = useState<RoadData[]>([])
-  const [trees, setTrees] = useState<[number, number, number][]>([])
-  const [buildings, setBuildings] = useState<BuildingData[]>([])
-  const [busStops, setBusStops] = useState<BusStopData[]>([])
-  const [bicingStations, setBicingStations] = useState<BicingStationData[]>([])
-  const [trafficViolations, setTrafficViolations] = useState<TrafficViolationData[]>([])
-  const [parkingZones, setParkingZones] = useState<ParkingZoneData[]>([])
-  const [bikeLanes, setBikeLanes] = useState<BikeLaneData[]>([])
+  // Get revealed state from store
+  const revealed = useLayerStore((state) => state.revealed)
 
-  // Building appearance controls
+  // Building color control
   const [buildingColor, setBuildingColor] = useState(BUILDING_COLOR)
-  const [buildingOpacity, setBuildingOpacity] = useState(BUILDING_OPACITY)
-
-  // Layer loading store
-  const setLoaded = useLayerStore((state) => state.setLoaded)
-
-  const layers: LayerVisibility = { ...ALL_VISIBLE, ...layerOverrides }
-
-  // Grid is always immediately available (no data fetch)
-  useEffect(() => {
-    setLoaded('grid')
-  }, [setLoaded])
-
-  // Fetch roads data
-  useEffect(() => {
-    fetchOSMData()
-      .then((data) => {
-        setRoads(parseRoads(data))
-        setLoaded('roads')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch trees data
-  useEffect(() => {
-    fetchBarcelonaTrees()
-      .then((data) => {
-        setTrees(data)
-        setLoaded('trees')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch buildings data
-  useEffect(() => {
-    fetchOvertureBuildings()
-      .then((data) => {
-        setBuildings(data)
-        setLoaded('buildings')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch bus stops data
-  useEffect(() => {
-    fetchBusStops()
-      .then((data) => {
-        setBusStops(data)
-        setLoaded('busStops')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch bicing stations data
-  useEffect(() => {
-    fetchBicingStations()
-      .then((data) => {
-        setBicingStations(data)
-        setLoaded('bicingStations')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch traffic violations data
-  useEffect(() => {
-    fetchTrafficViolations()
-      .then((data) => {
-        setTrafficViolations(data)
-        setLoaded('trafficViolations')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch parking zones data
-  useEffect(() => {
-    fetchParkingZones()
-      .then((data) => {
-        setParkingZones(data)
-        setLoaded('parking')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Fetch bike lanes data
-  useEffect(() => {
-    fetchBikeLanes()
-      .then((data) => {
-        setBikeLanes(data)
-        setLoaded('bikeLanes')
-      })
-      .catch(console.error)
-  }, [setLoaded])
-
-  // Flow particles are available once roads are loaded
-  useEffect(() => {
-    if (roads.length > 0) {
-      setLoaded('flowParticles')
-    }
-  }, [roads, setLoaded])
 
   return (
     <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
       <Canvas
         orthographic
         camera={{ zoom: 0.8, position: [0, 0, 500], near: -1000, far: 2000 }}
-        style={{ width: '100%', height: '100%', background: BG_COLOR }}
+        style={{ width: '100%', height: '100%', background: 'transparent' }}
       >
         {roads.length > 0 && (
           <Scene
@@ -311,63 +165,25 @@ export default function CityScene({ layers: layerOverrides }: CitySceneProps = {
             trafficViolations={trafficViolations}
             parkingZones={parkingZones}
             bikeLanes={bikeLanes}
-            layers={layers}
+            revealed={revealed}
             buildingColor={buildingColor}
-            buildingOpacity={buildingOpacity}
           />
         )}
       </Canvas>
 
-      {/* Building Controls - hidden */}
+      {/* Building Color Picker */}
       <div
         style={{
-          display: 'none',
           position: 'absolute',
-          top: 16,
-          right: 16,
-          background: 'rgba(0,0,0,0.7)',
-          padding: '12px 16px',
-          borderRadius: 8,
-          flexDirection: 'column',
-          gap: 12,
-          fontFamily: 'var(--font-sans)',
-          fontSize: 12,
-          color: 'white',
+          top: 24,
+          right: 24,
           zIndex: 100,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <label style={{ opacity: 0.7, minWidth: 50 }}>Color</label>
-          <input
-            type="color"
-            value={buildingColor}
-            onChange={(e) => setBuildingColor(e.target.value)}
-            style={{
-              width: 32,
-              height: 24,
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              background: 'transparent',
-            }}
-          />
-          <span style={{ opacity: 0.5, fontFamily: 'monospace' }}>{buildingColor}</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <label style={{ opacity: 0.7, minWidth: 50 }}>Opacity</label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={buildingOpacity}
-            onChange={(e) => setBuildingOpacity(parseFloat(e.target.value))}
-            style={{ width: 80 }}
-          />
-          <span style={{ opacity: 0.5, fontFamily: 'monospace', minWidth: 36 }}>
-            {buildingOpacity.toFixed(2)}
-          </span>
-        </div>
+        <ColorPicker
+          initialColor={BUILDING_COLOR}
+          onColorChange={setBuildingColor}
+        />
       </div>
     </div>
   )

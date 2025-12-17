@@ -1,5 +1,7 @@
 'use client';
 
+import { LogoMarquee } from '@/components/ui/LogoMarquee';
+
 interface TeamMember {
   name: string;
   role: string;
@@ -39,7 +41,7 @@ const teamMembers: TeamMember[] = [
 
 export function TeamSection() {
   return (
-    <div className="w-full h-full bg-[#0f0f1a] flex items-center justify-center p-8 md:p-16">
+    <div className="w-full h-full bg-transparent flex items-center justify-center p-8 md:p-16">
       <div className="max-w-5xl w-full">
         <h2 className="text-3xl md:text-4xl font-medium text-white mb-2 font-google">Our Team</h2>
         <p className="text-white/50 mb-10 font-google">
@@ -69,6 +71,14 @@ export function TeamSection() {
           <p className="text-white/30 text-sm font-google">
             Founded 2018 at Harvard School of Engineering and Applied Sciences
           </p>
+        </div>
+
+        <div className="mt-16">
+          <h3 className="text-xl font-medium text-white mb-2 font-google">Partners & Clients</h3>
+          <p className="text-white/40 text-sm mb-6 font-google">
+            Organizations we've worked with
+          </p>
+          <LogoMarquee velocity={30} logoSize={60} rows={2} />
         </div>
       </div>
     </div>

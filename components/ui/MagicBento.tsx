@@ -368,19 +368,22 @@ const MagicBento = ({
           pointer-events: none;
         }
         .magic-bento-card__header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .magic-bento-card__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.5); padding: 6px 12px; background: rgba(255, 255, 255, 0.1); border-radius: 6px; }
-        .magic-bento-card__icon { color: rgba(255, 255, 255, 0.7); }
-        .magic-bento-card__icon svg { width: 28px; height: 28px; }
+        .magic-bento-card__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255, 255, 255, 0.5); }
+        .magic-bento-card__icon { color: rgba(255, 255, 255, 0.5); }
+        .magic-bento-card__icon svg { width: 32px; height: 32px; }
         @media (min-width: 768px) {
-          .magic-bento-card__label { font-size: 12px; padding: 8px 14px; }
-          .magic-bento-card__icon svg { width: 32px; height: 32px; }
+          .magic-bento-card__label { font-size: 12px; }
+          .magic-bento-card__icon svg { width: 40px; height: 40px; }
         }
         .magic-bento-card__content { margin-top: auto; }
-        .magic-bento-card__title { font-size: 22px; font-weight: 600; color: #fff; margin: 0 0 10px 0; line-height: 1.2; }
-        .magic-bento-card__description { font-size: 15px; color: rgba(255, 255, 255, 0.6); margin: 0; line-height: 1.6; }
+        .magic-bento-card__title { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700; color: rgba(255, 255, 255, 0.95); margin: 0 0 12px 0; line-height: 1; letter-spacing: -0.03em; }
+        .magic-bento-card__description { font-size: 14px; color: rgba(255, 255, 255, 0.5); margin: 0; line-height: 1.5; }
         @media (min-width: 768px) {
-          .magic-bento-card__title { font-size: 26px; margin: 0 0 12px 0; }
+          .magic-bento-card__title { font-size: clamp(3.5rem, 5vw, 5.5rem); margin: 0 0 16px 0; }
           .magic-bento-card__description { font-size: 16px; }
+        }
+        @media (min-width: 1200px) {
+          .magic-bento-card__title { font-size: clamp(4rem, 4.5vw, 6rem); }
         }
         .magic-bento-card--text-autohide .magic-bento-card__content { opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
         .magic-bento-card--text-autohide:hover .magic-bento-card__content { opacity: 1; transform: translateY(0); }

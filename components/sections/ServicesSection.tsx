@@ -1,8 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { BarChart3, Layers, Map, TrendingUp, Share2, Eye } from 'lucide-react';
 import type { CardData } from '@/components/ui/MagicBento';
+import { Visible } from '@/components/layout/Visible';
 
 // Dynamically import MagicBento to avoid SSR issues with gsap
 const MagicBento = dynamic(() => import('@/components/ui/MagicBento'), {
@@ -11,11 +11,11 @@ const MagicBento = dynamic(() => import('@/components/ui/MagicBento'), {
     <div style={{
       width: '100%',
       height: '100%',
-      background: '#0f0f1a',
+      background: 'transparent',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      color: '#666'
+      color: 'rgba(0, 0, 30, 0.3)'
     }}>
       Loading...
     </div>
@@ -24,73 +24,69 @@ const MagicBento = dynamic(() => import('@/components/ui/MagicBento'), {
 
 const SERVICES: CardData[] = [
   {
-    color: '#0a1628',
+    color: '#1e3a5f',  // Deep blue
     title: 'Urban Analytics',
     description: 'Data-driven insights using advanced analytics to understand city patterns and inform decision-making.',
     label: 'Analytics',
-    icon: <BarChart3 size={24} />,
   },
   {
-    color: '#0a1628',
+    color: '#3b1d4a',  // Deep purple
     title: 'Digital Twins',
     description: 'Real-time city simulation with our City Digital Twin platform for scenario testing and optimization.',
     label: 'Simulation',
-    icon: <Layers size={24} />,
   },
   {
-    color: '#0a1628',
+    color: '#134e4a',  // Teal
     title: 'Master Planning',
     description: 'Metropolitan-scale design optimization using complexity science and network analysis.',
     label: 'Planning',
-    icon: <Map size={24} />,
   },
   {
-    color: '#0a1628',
+    color: '#4a2c1d',  // Warm brown
     title: 'Economic Development',
     description: 'Growth strategies for distributed prosperity and sustainable economic ecosystems.',
     label: 'Growth',
-    icon: <TrendingUp size={24} />,
   },
   {
-    color: '#0a1628',
+    color: '#1e3a3a',  // Dark cyan
     title: 'Network Analysis',
     description: 'Machine learning and complexity science to reveal hidden patterns in urban systems.',
     label: 'Networks',
-    icon: <Share2 size={24} />,
   },
   {
-    color: '#0a1628',
+    color: '#2d2d4a',  // Slate purple
     title: 'Visualization',
     description: 'Interactive dashboards and Business Intelligence Platforms for stakeholder engagement.',
     label: 'Visual',
-    icon: <Eye size={24} />,
   },
 ];
 
-export function TransitSection() {
+export function ServicesSection() {
   return (
     <section
-      id="transit"
+      id="services"
       style={{
         width: '100%',
         height: '100vh',
         position: 'relative',
         overflow: 'hidden',
-        background: '#0f0f1a',
       }}
     >
-      <MagicBento
-        cards={SERVICES}
-        textAutoHide={true}
-        enableStars={false}
-        enableSpotlight={false}
-        enableBorderGlow={true}
-        enableTilt={false}
-        enableMagnetism={false}
-        clickEffect={false}
-        spotlightRadius={500}
-        glowColor="59, 130, 246"
-      />
+      <Visible>
+        <MagicBento
+          cards={SERVICES}
+          textAutoHide={true}
+          enableStars={false}
+          enableSpotlight={false}
+          enableBorderGlow={true}
+          enableTilt={false}
+          enableMagnetism={false}
+          clickEffect={false}
+          particleCount={0}
+          spotlightRadius={500}
+          glowColor="59, 130, 246"
+        />
+      </Visible>
     </section>
   );
 }

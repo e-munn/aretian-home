@@ -48,12 +48,12 @@ function Corner({
 export default function CustomCursor() {
   const state = useCursorState();
   const rotate = useMotionValue(0);
-  const { hideCursor, darkMode } = useCursorContext();
+  const { hideCursor, darkMode, nearNavbar } = useCursorContext();
 
   const cursorColor = darkMode ? "#ffffff" : "var(--foreground)";
 
   useEffect(() => {
-    if (!state.targetBoundingBox) {
+    if (!state.targetBoundingBox && nearNavbar) {
       animate(rotate, [rotate.get(), rotate.get() + 360], {
         duration: 3,
         ease: "linear",
@@ -65,34 +65,38 @@ export default function CustomCursor() {
         bounce: 0.3,
       });
     }
-  }, [state.targetBoundingBox, rotate]);
+  }, [state.targetBoundingBox, rotate, nearNavbar]);
 
   if (hideCursor) return null;
 
   return (
     <>
+      {/* Small dot cursor - always visible */}
       <Cursor
         magnetic={{ morph: false, snap: 0 }}
         style={{ width: 5, height: 5, backgroundColor: cursorColor, transition: "background-color 0.3s" }}
         className="pointer-events-none"
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
-      <Cursor
-        magnetic={{ snap: 0.9, morph: true }}
-        style={{ rotate, width: 40, height: 40, backgroundColor: "transparent" }}
-        variants={{
-          pressed: { scale: state.targetBoundingBox ? 0.9 : 0.7 },
-        }}
-        className="pointer-events-none"
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-      >
-        <>
-          <Corner top={0} left={0} color={cursorColor} />
-          <Corner top={0} right={0} color={cursorColor} />
-          <Corner bottom={0} left={0} color={cursorColor} />
-          <Corner bottom={0} right={0} color={cursorColor} />
-        </>
-      </Cursor>
+      {/* Rotating corners - only near navbar */}
+      {nearNavbar && (
+        <Cursor
+          magnetic={{ snap: 0.9, morph: true }}
+          style={{ rotate, width: 40, height: 40, backgroundColor: "transparent" }}
+          variants={{
+            pressed: { scale: state.targetBoundingBox ? 0.9 : 0.7 },
+          }}
+          className="pointer-events-none"
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        >
+          <>
+            <Corner top={0} left={0} color={cursorColor} />
+            <Corner top={0} right={0} color={cursorColor} />
+            <Corner bottom={0} left={0} color={cursorColor} />
+            <Corner bottom={0} right={0} color={cursorColor} />
+          </>
+        </Cursor>
+      )}
     </>
   );
 }

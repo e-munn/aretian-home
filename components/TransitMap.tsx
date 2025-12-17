@@ -266,7 +266,7 @@ export default function TransitMap({ className }: TransitMapProps) {
   }, [stops]);
 
   return (
-    <div className={className} style={{ position: 'relative', width: '100%', height: '100%', background: '#0f0f1a', overflow: 'hidden' }}>
+    <div className={className} style={{ position: 'relative', width: '100%', height: '100%', background: 'transparent', overflow: 'hidden' }}>
       <Canvas
         orthographic
         camera={{ zoom: city.zoom, position: [0, 0, 2000], near: 0.1, far: 5000 }}

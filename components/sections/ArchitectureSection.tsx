@@ -29,9 +29,9 @@ function ArchitectureFlow() {
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      defaultViewport={{ x: 100, y: 50, zoom: 1.2 }}
-      minZoom={1.2}
-      maxZoom={1.2}
+      defaultViewport={{ x: 80, y: 120, zoom: 1.0 }}
+      minZoom={1.0}
+      maxZoom={1.0}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
@@ -42,12 +42,14 @@ function ArchitectureFlow() {
       zoomOnDoubleClick={false}
       preventScrolling={false}
       proOptions={{ hideAttribution: true }}
+      style={{ background: 'transparent' }}
     >
       <Background
         variant={BackgroundVariant.Dots}
         gap={20}
         size={1}
         color="#333"
+        style={{ backgroundColor: 'transparent' }}
       />
     </ReactFlow>
   );
@@ -55,7 +57,7 @@ function ArchitectureFlow() {
 
 export function ArchitectureSection() {
   return (
-    <div className="w-full h-full bg-[#0a0a0a] relative">
+    <div className="w-full h-full bg-transparent relative">
       <Visible>
         <div className="w-full h-full pointer-events-none">
           <ReactFlowProvider>

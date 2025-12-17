@@ -29,7 +29,7 @@ export const CITIES: Record<string, CityConfig> = {
     name: 'Boston',
     country: 'USA',
     center: { lat: 42.355, lon: -71.065 },
-    zoom: 0.35,
+    zoom: 0.22,
     rotation: 0, // north-south aligned
     roadTypes: ['primary', 'secondary', 'tertiary', 'residential'],
     transitDataPath: '/data/boston/transit-stops.json',

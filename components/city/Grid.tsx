@@ -5,17 +5,20 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Grid constants
-const GRID_ANGLE = 44.9 * (Math.PI / 180);
-const GRID_SPACING = 12; // meters between dots
-const GRID_EXTENT = 2500; // meters
+export const GRID_ANGLE = 44.9 * (Math.PI / 180);
+const GRID_SPACING = 24; // meters between dots
 
-// Animation constants
-const PROXIMITY = 150; // radius of mouse influence
-const SHOCK_RADIUS = 300; // radius of click effect
-const SHOCK_STRENGTH = 8; // how far dots get pushed
-const RETURN_SPEED = 0.03; // elastic return speed
-const SPEED_TRIGGER = 50; // mouse speed to trigger push
-const PUSH_STRENGTH = 0.15; // velocity-based push multiplier
+// Responsive extents based on screen width
+export const GRID_EXTENTS = {
+  large: 2500,  // Desktop (>1400px)
+  medium: 1600, // Tablet (>900px)
+  small: 800,   // Mobile - focused on ~4 building blocks
+};
+
+// Animation constants - subtle hover effect
+const PROXIMITY = 200; // radius of mouse influence
+const RETURN_SPEED = 0.08; // faster elastic return for snappier feel
+const SCALE_MULTIPLIER = 1.5; // max scale boost (1 + 1.5 = 2.5x at center)
 
 // Generate rotated dot grid
 function generateDotGrid(extent: number, spacing: number, angle: number) {
@@ -39,184 +42,175 @@ function generateDotGrid(extent: number, spacing: number, angle: number) {
 
 interface DotGridProps {
   color?: string;
-  activeColor?: string;
   opacity?: number;
+  extent?: number;
 }
 
 export function DotGrid({
-  color = '#596689',      // aretianBlue.400
-  activeColor = '#c5c9d6', // aretianBlue.100
-  opacity = 0.6
+  color = '#596689',
+  opacity = 0.7,
+  extent = GRID_EXTENTS.large,
 }: DotGridProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const { camera, gl } = useThree();
 
-  // Debug: log colors on mount
-  useEffect(() => {
-    console.log('DotGrid colors:', { color, activeColor, opacity });
-  }, [color, activeColor, opacity]);
-
-  // Store dot data with offsets
-  const dotsRef = useRef(generateDotGrid(GRID_EXTENT, GRID_SPACING, GRID_ANGLE));
-  const dots = dotsRef.current;
+  // Generate dots based on extent - recalculate when extent changes
+  const dots = useMemo(() => generateDotGrid(extent, GRID_SPACING, GRID_ANGLE), [extent]);
 
   // Mouse state
-  const mouseRef = useRef({ x: 0, y: 0, vx: 0, vy: 0, speed: 0, lastX: 0, lastY: 0, lastTime: 0 });
+  const mouseRef = useRef({ x: 0, y: 0, lastMoveTime: 0, isActive: false });
   const worldPosRef = useRef(new THREE.Vector3());
+  const localPosRef = useRef(new THREE.Vector3());
   const raycaster = useRef(new THREE.Raycaster());
-  const plane = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0));
-
-  // Colors
-  const baseColor = useMemo(() => new THREE.Color(color), [color]);
-  const glowColor = useMemo(() => new THREE.Color(activeColor), [activeColor]);
-  const tempColor = useRef(new THREE.Color());
+  // Plane at z=-35 (scene at z=-40, grid at z=5 relative to scene)
+  const plane = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 35));
   const tempObject = useRef(new THREE.Object3D());
+  // Track current scale for smooth transitions
+  const scalesRef = useRef<Float32Array | null>(null);
 
-  // Initialize instance matrices and colors
+  // Initialize instance matrices and scales array
   useEffect(() => {
     if (!meshRef.current) return;
     const mesh = meshRef.current;
     const obj = tempObject.current;
-    const col = tempColor.current;
+
+    // Initialize scales array
+    scalesRef.current = new Float32Array(dots.length).fill(1);
 
     dots.forEach((dot, i) => {
       obj.position.set(dot.x, dot.y, 0);
       obj.updateMatrix();
       mesh.setMatrixAt(i, obj.matrix);
-      // Set initial color
-      col.copy(baseColor);
-      mesh.setColorAt(i, col);
     });
     mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [dots, baseColor]);
+  }, [dots]);
 
-  // Handle mouse move
+  // Handle mouse move - track activity and NDC position
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const rect = gl.domElement.getBoundingClientRect();
-      const now = performance.now();
       const mouse = mouseRef.current;
 
-      // Calculate velocity
-      const dt = mouse.lastTime ? now - mouse.lastTime : 16;
-      const dx = e.clientX - mouse.lastX;
-      const dy = e.clientY - mouse.lastY;
-      mouse.vx = (dx / dt) * 1000;
-      mouse.vy = (dy / dt) * 1000;
-      mouse.speed = Math.hypot(mouse.vx, mouse.vy);
-      mouse.lastX = e.clientX;
-      mouse.lastY = e.clientY;
-      mouse.lastTime = now;
+      // Check if mouse is within canvas bounds
+      const inBounds =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
 
-      // Convert to NDC
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      const rect = gl.domElement.getBoundingClientRect();
-      const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-      // Raycast to get world position
-      raycaster.current.setFromCamera({ x: ndcX, y: ndcY }, camera);
-      const intersection = new THREE.Vector3();
-      raycaster.current.ray.intersectPlane(plane.current, intersection);
-
-      if (intersection) {
-        // Apply shock wave
-        for (const dot of dots) {
-          const dx = dot.x - intersection.x;
-          const dy = dot.y - intersection.y;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist < SHOCK_RADIUS && dist > 0) {
-            const falloff = 1 - dist / SHOCK_RADIUS;
-            const pushX = (dx / dist) * SHOCK_STRENGTH * falloff * falloff;
-            const pushY = (dy / dist) * SHOCK_STRENGTH * falloff * falloff;
-            dot.ox += pushX;
-            dot.oy += pushY;
-          }
-        }
+      if (inBounds) {
+        // Convert to NDC
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        mouse.lastMoveTime = performance.now();
+        mouse.isActive = true;
       }
     };
 
+    const handleMouseLeave = () => {
+      mouseRef.current.isActive = false;
+    };
+
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    gl.domElement.addEventListener('click', handleClick);
+    gl.domElement.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      gl.domElement.removeEventListener('click', handleClick);
+      gl.domElement.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [camera, gl, dots]);
+  }, [gl]);
 
-  // Animation frame
+  // Animation frame - smooth proximity-based scale with activity detection
   useFrame(() => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || !scalesRef.current) return;
     const mesh = meshRef.current;
     const mouse = mouseRef.current;
     const obj = tempObject.current;
-    const col = tempColor.current;
+    const scales = scalesRef.current;
 
-    // Raycast to get world position of mouse
-    raycaster.current.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
-    raycaster.current.ray.intersectPlane(plane.current, worldPosRef.current);
-    const mouseWorld = worldPosRef.current;
+    // Check if mouse has been inactive for more than 150ms
+    const now = performance.now();
+    const INACTIVE_THRESHOLD = 150;
+    if (mouse.isActive && now - mouse.lastMoveTime > INACTIVE_THRESHOLD) {
+      mouse.isActive = false;
+    }
+
+    // Raycast to get world position of mouse (only if active)
+    let mouseLocal = localPosRef.current;
+    if (mouse.isActive) {
+      raycaster.current.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
+      raycaster.current.ray.intersectPlane(plane.current, worldPosRef.current);
+
+      // Transform world position to local space (rotate by +GRID_ANGLE to undo scene's -GRID_ANGLE rotation)
+      const cos = Math.cos(GRID_ANGLE);
+      const sin = Math.sin(GRID_ANGLE);
+      const wx = worldPosRef.current.x;
+      const wy = worldPosRef.current.y;
+      localPosRef.current.set(wx * cos - wy * sin, wx * sin + wy * cos, 0);
+    }
 
     const proxSq = PROXIMITY * PROXIMITY;
+    let needsUpdate = false;
 
     for (let i = 0; i < dots.length; i++) {
       const dot = dots[i];
 
-      // Distance to mouse
-      const dx = dot.x - mouseWorld.x;
-      const dy = dot.y - mouseWorld.y;
-      const distSq = dx * dx + dy * dy;
-      const dist = Math.sqrt(distSq);
+      // Calculate target scale
+      let targetScale = 1;
+      if (mouse.isActive) {
+        const dx = dot.x - mouseLocal.x;
+        const dy = dot.y - mouseLocal.y;
+        const distSq = dx * dx + dy * dy;
 
-      // Speed-based push
-      if (mouse.speed > SPEED_TRIGGER && distSq < proxSq && dist > 0) {
-        const pushX = (dx / dist) * mouse.speed * PUSH_STRENGTH * 0.001;
-        const pushY = (dy / dist) * mouse.speed * PUSH_STRENGTH * 0.001;
-        dot.ox += pushX;
-        dot.oy += pushY;
+        if (distSq < proxSq) {
+          const dist = Math.sqrt(distSq);
+          const t = 1 - dist / PROXIMITY;
+          targetScale = 1 + t * t * SCALE_MULTIPLIER;
+        }
       }
 
-      // Elastic return
-      dot.ox *= (1 - RETURN_SPEED);
-      dot.oy *= (1 - RETURN_SPEED);
+      // Smoothly interpolate current scale toward target
+      const currentScale = scales[i];
+      const diff = targetScale - currentScale;
 
-      // Clamp offset
-      const maxOffset = 50;
-      dot.ox = Math.max(-maxOffset, Math.min(maxOffset, dot.ox));
-      dot.oy = Math.max(-maxOffset, Math.min(maxOffset, dot.oy));
+      // Only update if there's a meaningful difference
+      if (Math.abs(diff) > 0.001) {
+        scales[i] = currentScale + diff * RETURN_SPEED;
+        needsUpdate = true;
+      } else if (scales[i] !== targetScale) {
+        scales[i] = targetScale;
+        needsUpdate = true;
+      }
 
-      // Update position
-      obj.position.set(dot.x + dot.ox, dot.y + dot.oy, 0);
+      // Update position and scale
+      obj.position.set(dot.x, dot.y, 0);
+      obj.scale.set(scales[i], scales[i], 1);
       obj.updateMatrix();
       mesh.setMatrixAt(i, obj.matrix);
-
-      // Proximity-based color
-      if (distSq < proxSq) {
-        const t = 1 - dist / PROXIMITY;
-        col.copy(baseColor).lerp(glowColor, t * t);
-      } else {
-        col.copy(baseColor);
-      }
-      mesh.setColorAt(i, col);
     }
 
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    if (needsUpdate) {
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, dots.length]} frustumCulled={false}>
-      <circleGeometry args={[1.5, 8]} />
-      <meshBasicMaterial transparent opacity={opacity} vertexColors />
+    <instancedMesh
+      key={extent}
+      ref={meshRef}
+      args={[undefined, undefined, dots.length]}
+      frustumCulled={false}
+      position={[0, 0, 5]} // Render above other elements
+    >
+      <circleGeometry args={[1.8, 8]} />
+      <meshBasicMaterial
+        transparent
+        opacity={opacity}
+        color={color}
+        depthWrite={false}
+        toneMapped={false}
+      />
     </instancedMesh>
   );
 }
 
-export { GRID_ANGLE };

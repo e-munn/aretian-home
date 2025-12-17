@@ -1,5 +1,5 @@
 export { CitySection } from './CitySection';
-export { TransitSection } from './TransitSection';
+export { ServicesSection } from './ServicesSection';
 export { ArchitectureSection } from './ArchitectureSection';
 export { DesignSection } from './DesignSection';
 export { ProjectsSection } from './ProjectsSection';

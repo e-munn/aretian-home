@@ -2,7 +2,7 @@
 
 export function ContactSection() {
   return (
-    <div className="w-full h-full bg-[#0a0a1a] flex items-center justify-center p-16">
+    <div className="w-full h-full bg-transparent flex items-center justify-center p-16">
       <div className="max-w-md w-full">
         <h2 className="text-3xl font-medium text-white mb-2 font-google">Get in Touch</h2>
         <p className="text-white/50 mb-8 font-google">We'd love to hear from you</p>

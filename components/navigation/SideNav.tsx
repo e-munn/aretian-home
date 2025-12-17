@@ -9,10 +9,13 @@ export interface NavSection {
   description?: string;
 }
 
+type ColorMode = 'dark' | 'light';
+
 interface SideNavProps {
   sections: NavSection[];
   activeIndex: number;
   onNavigate?: (index: number) => void;
+  colorMode?: ColorMode;
 }
 
 const FONTS = [
@@ -28,7 +31,7 @@ const FONTS = [
   { key: '0', name: 'Sora', family: 'var(--font-sora)' },
 ];
 
-export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
+export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' }: SideNavProps) {
   const [fontIndex, setFontIndex] = useState(2); // Outfit
 
   useEffect(() => {
@@ -43,6 +46,9 @@ export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
   }, []);
 
   const currentFont = FONTS[fontIndex];
+
+  // Text colors based on color mode
+  const textColor = colorMode === 'light' ? '#0f0f1a' : '#ffffff';
 
   return (
     <div className="fixed left-0 top-0 bottom-0 z-[100] w-screen h-screen flex flex-col pointer-events-none">
@@ -67,17 +73,20 @@ export function SideNav({ sections, activeIndex, onNavigate }: SideNavProps) {
                 className="pointer-events-auto cursor-pointer text-left bg-transparent border-none p-0 m-0"
                 aria-label={`Go to ${section.label}`}
               >
-                <span
-                  className="text-white font-bold uppercase whitespace-nowrap"
+                <motion.span
+                  className="uppercase whitespace-nowrap"
+                  animate={{ color: textColor }}
+                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
                   style={{
                     fontSize: index === 0 ? 'clamp(5rem, 12vw, 10rem)' : 'clamp(4rem, 10vw, 8rem)',
                     lineHeight: 0.85,
                     letterSpacing: index === 0 ? '0.15em' : 'normal',
-                    fontFamily: index === 0 ? 'var(--font-geo)' : currentFont.family
+                    fontWeight: index === 0 ? 800 : 600,
+                    fontFamily: index === 0 ? 'var(--font-geo)' : currentFont.family,
                   }}
                 >
                   {section.label}
-                </span>
+                </motion.span>
               </button>
             </motion.li>
           ))}

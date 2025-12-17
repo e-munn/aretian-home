@@ -4,7 +4,7 @@ import { FullPageScroll } from '@/components/navigation/FullPageScroll';
 import { NavSection } from '@/components/navigation/SideNav';
 import {
   CitySection,
-  TransitSection,
+  ServicesSection,
   ArchitectureSection,
   DesignSection,
   ProjectsSection,
@@ -12,19 +12,19 @@ import {
   ContactSection,
 } from '@/components/sections';
 
-// Define sections for navigation
+// Define sections for navigation - ids match labels for clean URLs
 const sections: NavSection[] = [
   {
-    id: 'city',
+    id: 'aretian',
     label: 'Aretian',
   },
   {
-    id: 'transit',
+    id: 'services',
     label: 'Services',
-    description: 'Boston transit network intensity map. Circle size represents daily trip frequency at each stop. Data from MBTA GTFS feeds.'
+    description: 'Urban analytics, digital twins, master planning, and economic development services for cities worldwide.'
   },
   {
-    id: 'architecture',
+    id: 'process',
     label: 'Process',
     description: 'How we work: collecting urban data, analyzing patterns, and deploying actionable insights for city transformation.'
   },
@@ -54,7 +54,7 @@ export default function Home() {
   return (
     <FullPageScroll sections={sections}>
       <CitySection />
-      <TransitSection />
+      <ServicesSection />
       <ArchitectureSection />
       <DesignSection />
       <ProjectsSection />

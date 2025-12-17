@@ -60,11 +60,11 @@ export function BusStopMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} />
+        <meshBasicMaterial color={color} transparent opacity={0.75} />
       </instancedMesh>
       <instancedMesh ref={circleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <circleGeometry args={[5, 16]} />
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
       </instancedMesh>
     </>
   );
@@ -118,11 +118,11 @@ export function BicingMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} />
+        <meshBasicMaterial color={color} transparent opacity={0.75} />
       </instancedMesh>
       <instancedMesh ref={squareRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <planeGeometry args={[8, 8]} />
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
       </instancedMesh>
     </>
   );
@@ -186,10 +186,10 @@ export function TrafficViolationMarkers({
     <>
       <instancedMesh ref={poleRef} args={[undefined, undefined, positions.length]} frustumCulled>
         <cylinderGeometry args={[0.6, 0.6, poleHeight, 4]} />
-        <meshBasicMaterial color={color} />
+        <meshBasicMaterial color={color} transparent opacity={0.75} />
       </instancedMesh>
       <instancedMesh ref={triangleRef} args={[triangleGeometry, undefined, positions.length]} frustumCulled>
-        <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.75} />
       </instancedMesh>
     </>
   );

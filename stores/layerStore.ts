@@ -1,62 +1,49 @@
 import { create } from 'zustand';
 
-// Layer loading states - matches actual data fetches
+// Layer keys in reveal order (left to right in legend)
 export type LayerKey =
   | 'grid'
   | 'roads'
   | 'trees'
-  | 'buildings'
   | 'parking'
   | 'bikeLanes'
   | 'busStops'
   | 'bicingStations'
   | 'trafficViolations'
-  | 'flowParticles';
+  | 'flowParticles'
+  | 'buildings';
 
-// Order layers load in (for legend display)
-export const LAYER_ORDER: LayerKey[] = [
-  'grid',
-  'roads',
-  'trees',
-  'buildings',
-  'parking',
-  'bikeLanes',
-  'busStops',
-  'bicingStations',
-  'trafficViolations',
-  'flowParticles',
-];
-
-// Group definitions for legend
-export const LAYER_GROUPS = [
-  { key: 'roads', layers: ['grid', 'roads'] as LayerKey[] },
-  { key: 'trees', layers: ['trees'] as LayerKey[] },
-  { key: 'buildings', layers: ['buildings'] as LayerKey[] },
-  { key: 'data', layers: ['parking', 'bikeLanes', 'busStops', 'bicingStations', 'trafficViolations', 'flowParticles'] as LayerKey[] },
+// Reveal sequence - fast staged reveal for immediate visual impact
+// Total time: ~4.5 seconds
+export const REVEAL_SEQUENCE: { layers: LayerKey[]; delay: number }[] = [
+  { layers: ['grid', 'roads'], delay: 0 },           // Roads - immediate
+  { layers: ['trees'], delay: 500 },                 // Trees - 0.5s
+  { layers: ['parking', 'bikeLanes'], delay: 1000 }, // Data start - 1s
+  { layers: ['busStops'], delay: 1800 },             // Data sub 1 - 1.8s
+  { layers: ['bicingStations'], delay: 2600 },       // Data sub 2 - 2.6s
+  { layers: ['trafficViolations'], delay: 3400 },    // Data sub 3 - 3.4s
+  { layers: ['flowParticles'], delay: 4200 },        // Data sub 4 - 4.2s
+  { layers: ['buildings'], delay: 4700 },            // Buildings - 4.7s
 ];
 
 interface LayerState {
-  // Which layers have finished loading
-  loaded: Record<LayerKey, boolean>;
-  // Which layer is currently loading (for progress animation)
-  currentlyLoading: LayerKey | null;
-  // Mark a layer as loaded
-  setLoaded: (layer: LayerKey) => void;
-  // Set currently loading layer
-  setCurrentlyLoading: (layer: LayerKey | null) => void;
-  // Reset all loading state
+  // Which layers are revealed (visible)
+  revealed: Record<LayerKey, boolean>;
+  // When the reveal sequence started (null if not started)
+  startTime: number | null;
+  // Start the reveal sequence
+  startReveal: () => void;
+  // Check if a layer is revealed
+  isRevealed: (layer: LayerKey) => boolean;
+  // Get start time
+  getStartTime: () => number | null;
+  // Reset all
   reset: () => void;
-  // Check if all layers in a group are loaded
-  isGroupLoaded: (groupKey: string) => boolean;
-  // Check if any layer in a group is loading
-  isGroupLoading: (groupKey: string) => boolean;
-  // Get current loading index (for progress)
-  getCurrentIndex: () => number;
-  // Check if all layers are loaded
+  // Check if all layers are revealed
   isComplete: () => boolean;
 }
 
-const initialLoaded: Record<LayerKey, boolean> = {
+const initialRevealed: Record<LayerKey, boolean> = {
   grid: false,
   roads: false,
   trees: false,
@@ -70,47 +57,38 @@ const initialLoaded: Record<LayerKey, boolean> = {
 };
 
 export const useLayerStore = create<LayerState>((set, get) => ({
-  loaded: { ...initialLoaded },
-  currentlyLoading: null,
+  revealed: { ...initialRevealed },
+  startTime: null,
 
-  setLoaded: (layer) => set((state) => ({
-    loaded: { ...state.loaded, [layer]: true },
-    currentlyLoading: state.currentlyLoading === layer ? null : state.currentlyLoading,
-  })),
+  startReveal: () => {
+    const now = Date.now();
+    set({ startTime: now });
 
-  setCurrentlyLoading: (layer) => set({ currentlyLoading: layer }),
+    // Schedule each group reveal
+    REVEAL_SEQUENCE.forEach(({ layers, delay }) => {
+      setTimeout(() => {
+        set((state) => {
+          const newRevealed = { ...state.revealed };
+          layers.forEach((layer) => {
+            newRevealed[layer] = true;
+          });
+          return { revealed: newRevealed };
+        });
+      }, delay);
+    });
+  },
+
+  isRevealed: (layer) => get().revealed[layer],
+
+  getStartTime: () => get().startTime,
 
   reset: () => set({
-    loaded: { ...initialLoaded },
-    currentlyLoading: null,
+    revealed: { ...initialRevealed },
+    startTime: null,
   }),
 
-  isGroupLoaded: (groupKey) => {
-    const group = LAYER_GROUPS.find(g => g.key === groupKey);
-    if (!group) return false;
-    const { loaded } = get();
-    return group.layers.every(layer => loaded[layer]);
-  },
-
-  isGroupLoading: (groupKey) => {
-    const group = LAYER_GROUPS.find(g => g.key === groupKey);
-    if (!group) return false;
-    const { currentlyLoading } = get();
-    return currentlyLoading !== null && group.layers.includes(currentlyLoading);
-  },
-
-  getCurrentIndex: () => {
-    const { loaded } = get();
-    let index = 0;
-    for (const layer of LAYER_ORDER) {
-      if (loaded[layer]) index++;
-      else break;
-    }
-    return index;
-  },
-
   isComplete: () => {
-    const { loaded } = get();
-    return LAYER_ORDER.every(layer => loaded[layer]);
+    const { revealed } = get();
+    return Object.values(revealed).every(Boolean);
   },
 }));
