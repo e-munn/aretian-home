@@ -1,8 +1,6 @@
 'use client';
 
 import { LoadingLegend } from '@/components/city/LoadingLegend';
-import GradualBlur from '@/components/GradualBlur';
-import '@/components/GradualBlur.css';
 import dynamic from 'next/dynamic';
 import { AsyncBoundary } from '@/components/ui/AsyncBoundary';
 
@@ -25,18 +23,6 @@ export function CitySection() {
       <AsyncBoundary loadingFallback={CityLoadingFallback}>
         <CityScene />
       </AsyncBoundary>
-      {/* Blur overlay - hidden for now
-      <GradualBlur
-        target="parent"
-        position="bottom"
-        height="25%"
-        strength={2}
-        divCount={10}
-        curve="bezier"
-        exponential={false}
-        opacity={0.8}
-      />
-      */}
       <LoadingLegend />
     </div>
   );

@@ -18,6 +18,7 @@ import { useLayerStore, LayerKey } from '@/stores/layerStore'
 import { usePaletteStore } from '@/stores/paletteStore'
 import { SIZE_ZOOMS, SIZE_RADII, SizeMode } from '@/stores/sizeStore'
 import { filterPointsByRadius, filterRoadsByRadius, isWithinRadius } from './city/data'
+import BuildingColorPicker from '@/components/ui/BuildingColorPicker'
 
 // Screen width breakpoints for size mode
 const SIZE_BREAKPOINTS = {
@@ -162,7 +163,7 @@ export default function CityScene() {
   const hoveredLayers = useLayerStore((state) => state.hoveredLayers)
 
   // Get palette from store
-  const { palette, next, prev } = usePaletteStore()
+  const { palette, next, prev, customBuildingColor, customBuildingOpacity, setBuildingColor, setBuildingOpacity } = usePaletteStore()
 
   // Auto-determine size mode from screen width (medium default, large disabled)
   const [sizeMode, setSizeMode] = useState<SizeMode>('medium')
@@ -209,22 +210,22 @@ export default function CityScene() {
     return 0.15
   }, [hoveredLayers])
 
-  // Calculate building color - brighter and less saturated when hovered
+  // Calculate building color - use custom color if set, otherwise palette
   const buildingColor = useMemo(() => {
     if (hoveredLayers?.includes('buildings')) {
       // Bright desaturated color for hover - light grayish blue
       return '#8090a8'
     }
-    return palette.building
-  }, [hoveredLayers, palette.building])
+    return customBuildingColor || palette.building
+  }, [hoveredLayers, palette.building, customBuildingColor])
 
   // Calculate building opacity - more transparent when hovered
   const buildingOpacity = useMemo(() => {
     if (hoveredLayers?.includes('buildings')) {
       return 0.5
     }
-    return palette.buildingOpacity
-  }, [hoveredLayers, palette.buildingOpacity])
+    return customBuildingOpacity ?? palette.buildingOpacity
+  }, [hoveredLayers, customBuildingOpacity, palette.buildingOpacity])
 
   // Keyboard navigation: arrows for palette
   useEffect(() => {
@@ -241,6 +242,9 @@ export default function CityScene() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [next, prev])
+
+  // State for showing color picker
+  const [showColorPicker, setShowColorPicker] = useState(false)
 
   return (
     <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
@@ -269,6 +273,52 @@ export default function CityScene() {
         )}
       </Canvas>
 
+      {/* Color picker - hidden for now
+      <button
+        onClick={() => setShowColorPicker(!showColorPicker)}
+        style={{
+          position: 'absolute',
+          bottom: 24,
+          right: 24,
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          background: customBuildingColor || palette.building,
+          border: '2px solid rgba(255,255,255,0.3)',
+          cursor: 'pointer',
+          zIndex: 100,
+          transition: 'transform 0.2s, border-color 0.2s',
+          opacity: customBuildingOpacity ?? palette.buildingOpacity,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.1)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'
+        }}
+        title="Pick building color"
+      />
+      {showColorPicker && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 80,
+            right: 24,
+            zIndex: 100,
+          }}
+        >
+          <BuildingColorPicker
+            color={customBuildingColor || palette.building}
+            opacity={customBuildingOpacity ?? palette.buildingOpacity}
+            onColorChange={setBuildingColor}
+            onOpacityChange={setBuildingOpacity}
+            onClose={() => setShowColorPicker(false)}
+          />
+        </div>
+      )}
+      */}
     </div>
   )
 }

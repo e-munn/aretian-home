@@ -20,21 +20,22 @@ interface SideNavProps {
 
 // Nav font for non-Aretian items
 const NAV_FONT = 'var(--font-albert-sans)';
+// Logo font
+const LOGO_FONT = 'var(--font-bebas-neue)';
 
 export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' }: SideNavProps) {
-
   // Text colors based on color mode
   const textColor = colorMode === 'light' ? '#0f0f1a' : '#ffffff';
 
   return (
     <div className="fixed left-0 top-0 bottom-0 z-[100] w-screen h-screen flex flex-col pointer-events-none">
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col pt-6 pb-8 px-8">
+      <nav className="flex-1 flex flex-col pt-10 pb-8 px-8">
         <ul className="flex flex-col justify-between h-full list-none m-0 p-0">
           {sections.map((section, index) => {
             const isFirst = index === 0;
             const fontSize = isFirst ? 'clamp(4.5rem, 7vw, 9rem)' : 'clamp(3.5rem, 5.5vw, 7rem)';
-            const fontFamily = isFirst ? 'var(--font-geo)' : NAV_FONT;
+            const fontFamily = isFirst ? LOGO_FONT : NAV_FONT;
             const fontWeight = isFirst ? 800 : 600;
             const letterSpacing = isFirst ? '0.15em' : '0.05em';
 
@@ -51,6 +52,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                   scale: activeIndex === index ? 1.02 : 1,
                   y: 0,
                 }}
+                style={{ transformOrigin: 'left center' }}
                 transition={{
                   duration: 1.2,
                   delay: staggerDelay,
@@ -88,7 +90,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                           opacity: 1,
                           filter: 'blur(0px)',
                           x: 0,
-                          color: colorMode === 'light' ? 'rgba(15, 15, 26, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+                          color: colorMode === 'light' ? '#0f0f1a' : '#ffffff'
                         }}
                         exit={{ opacity: 0, filter: 'blur(12px)', x: 20 }}
                         transition={{
@@ -98,18 +100,28 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                         }}
                         className="shrink-0"
                         style={{
-                          fontFamily: 'var(--font-geo)',
+                          fontFamily: LOGO_FONT,
                           fontWeight: 600,
                           letterSpacing: '0.05em',
                         }}
                       >
                         {/* Desktop - single line */}
                         <span
-                          className="hidden min-[840px]:inline"
-                          style={{ fontSize: 'clamp(2.5rem, 4vw, 5rem)', whiteSpace: 'nowrap' }}
+                          className="hidden min-[840px]:inline items-center gap-4"
+                          style={{ fontSize: 'clamp(2.5rem, 4vw, 5rem)', whiteSpace: 'nowrap', display: 'inline-flex' }}
                         >
+                          <span className="w-0.5 h-[72px] bg-current opacity-40 -mt-3" />
                           <DecryptedText
-                            text="- urban analytics & design"
+                            text="URBAN ANALYTICS"
+                            animateOn="view"
+                            characters=";:."
+                            speed={80}
+                            sequential={true}
+                            revealDirection="start"
+                          />
+                          <span style={{ fontFamily: 'system-ui, sans-serif', fontWeight: 400, fontSize: '0.85em', position: 'relative', top: '-0.1em', margin: '0 -0.1em' }}>&</span>
+                          <DecryptedText
+                            text="DESIGN"
                             animateOn="view"
                             characters=";:."
                             speed={80}
@@ -119,25 +131,31 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                         </span>
                         {/* Mobile - two lines */}
                         <span
-                          className="inline min-[840px]:hidden flex flex-col leading-tight"
+                          className="min-[840px]:hidden flex flex-col leading-tight"
                           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)' }}
                         >
-                          <DecryptedText
-                            text="- urban analytics"
-                            animateOn="view"
-                            characters=";:."
-                            speed={80}
-                            sequential={true}
-                            revealDirection="start"
-                          />
-                          <DecryptedText
-                            text="& design"
-                            animateOn="view"
-                            characters=";:."
-                            speed={80}
-                            sequential={true}
-                            revealDirection="start"
-                          />
+                          <span className="flex items-center gap-3">
+                            <span className="w-0.5 h-14 bg-current opacity-40 -mt-1" />
+                            <DecryptedText
+                              text="URBAN ANALYTICS"
+                              animateOn="view"
+                              characters=";:."
+                              speed={80}
+                              sequential={true}
+                              revealDirection="start"
+                            />
+                          </span>
+                          <span>
+                            <span style={{ fontFamily: 'system-ui, sans-serif', fontWeight: 400, fontSize: '0.85em', position: 'relative', top: '-0.1em', margin: '0 -0.05em' }}>&</span>
+                            <DecryptedText
+                              text="DESIGN"
+                              animateOn="view"
+                              characters=";:."
+                              speed={80}
+                              sequential={true}
+                              revealDirection="start"
+                            />
+                          </span>
                         </span>
                       </motion.div>
                     )}

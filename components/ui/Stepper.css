@@ -1,0 +1,138 @@
+/* Stepper Component Styles */
+
+.stepper-outer {
+  width: 100%;
+  max-width: 480px;
+}
+
+.stepper-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stepper-indicator-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+}
+
+.stepper-indicator {
+  cursor: pointer;
+  z-index: 10;
+}
+
+.stepper-indicator-inner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.stepper-check {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.stepper-active-dot {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+}
+
+.stepper-step-number {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stepper-connector {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+  min-width: 40px;
+  max-width: 80px;
+}
+
+.stepper-connector-inner {
+  height: 100%;
+  border-radius: 1px;
+}
+
+.stepper-content {
+  min-height: 200px;
+}
+
+.stepper-step {
+  padding: 8px 0;
+}
+
+.stepper-footer {
+  padding-top: 16px;
+}
+
+.stepper-nav {
+  display: flex;
+  gap: 12px;
+}
+
+.stepper-nav.spread {
+  justify-content: space-between;
+}
+
+.stepper-nav.end {
+  justify-content: flex-end;
+}
+
+.stepper-back {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stepper-back:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stepper-back.inactive {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stepper-next {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: #00C217;
+  border: none;
+  color: black;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stepper-next:hover {
+  background: #00a814;
+  transform: translateY(-1px);
+}
+
+.stepper-next:active {
+  transform: translateY(0);
+}

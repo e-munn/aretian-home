@@ -5,14 +5,19 @@ module.exports = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    appDir: true,
-  },
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '"lh3.googleusercontent.com"',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'static.wixstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
       },
     ],
   },

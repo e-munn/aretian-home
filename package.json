@@ -23,7 +23,9 @@
     "supabase:pull": "npx supabase pull"
   },
   "overrides": {
-    "react-is": "^19.0.0-rc-69d4b800-20241021"
+    "react-is": "^19.0.0-rc-69d4b800-20241021",
+    "three-globe": "2.31.0",
+    "globe.gl": "2.31.0"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.18",
@@ -113,6 +115,7 @@
     "react-force-graph-3d": "^1.24.3",
     "react-globe.gl": "^2.27.2",
     "react-hook-form": "^7.52.0",
+    "react-icons": "^5.5.0",
     "react-intersection-observer": "^9.13.1",
     "react-map-gl": "^7.1.7",
     "react-resizable-panels": "^2.1.3",

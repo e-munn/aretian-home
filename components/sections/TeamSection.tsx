@@ -3,8 +3,11 @@
 import { motion } from 'framer-motion';
 import { MoreHorizontal } from 'lucide-react';
 import { Visible } from '@/components/layout/Visible';
-import { GradualBlur } from '@/components/ui/GradualBlur';
-import { LogoMarquee } from '@/components/ui/LogoMarquee';
+import ScrollVelocity from '@/components/ScrollVelocity';
+
+// Partner and client names
+const PARTNERS_ROW_1 = 'Harvard GSD  •  MIT Media Lab  •  Barcelona City Council  •  Massachusetts Port Authority  •  World Bank  •  Inter-American Development Bank';
+const PARTNERS_ROW_2 = 'Bloomberg Associates  •  Sidewalk Labs  •  Amazon Web Services  •  Microsoft Research  •  Urban Land Institute  •  ESRI';
 
 interface TeamMember {
   name: string;
@@ -87,11 +90,11 @@ function ListView({ members }: { members: TeamMember[] }) {
     <div className="relative h-full overflow-hidden">
       {/* Scrollable content */}
       <div
-        className="h-full px-8 pt-8 pb-16 overflow-y-auto scrollbar-hide relative z-0"
+        className="h-full px-8 pt-8 pb-24 overflow-y-auto scrollbar-hide relative z-0"
         style={{ overscrollBehavior: 'contain' }}
         data-scrollable
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto flex flex-col justify-start">
           {members.map((member, i) => (
             <div key={member.name}>
               <motion.div
@@ -110,9 +113,9 @@ function ListView({ members }: { members: TeamMember[] }) {
               </div>
 
               {/* Name - fixed width */}
-              <div className="w-72 shrink-0">
+              <div className="w-80 shrink-0">
                 <h3
-                  className="text-white text-lg md:text-xl uppercase tracking-wide leading-tight"
+                  className="text-white text-xl md:text-2xl uppercase tracking-wide leading-tight"
                   style={{ fontFamily: 'var(--font-bebas-neue)' }}
                 >
                   {member.name}
@@ -146,23 +149,12 @@ function ListView({ members }: { members: TeamMember[] }) {
         </div>
       </div>
 
-      <GradualBlur
-        position="top"
-        height="6rem"
-        strength={2}
-        divCount={5}
-        curve="bezier"
-        exponential={true}
-        opacity={1}
-      />
-      <GradualBlur
-        position="bottom"
-        height="6rem"
-        strength={2}
-        divCount={5}
-        curve="bezier"
-        exponential={true}
-        opacity={1}
+      {/* Bottom fade gradient */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10"
+        style={{
+          background: 'linear-gradient(to top, #0f0f1a 0%, #0f0f1a 20%, transparent 100%)',
+        }}
       />
     </div>
   );
@@ -180,23 +172,45 @@ export function TeamSection() {
       }}
     >
       <Visible>
-        <div className="w-full h-full flex flex-col">
-          {/* Team list - 68vh, aligned to top */}
-          <div style={{ height: '68vh' }}>
-            <ListView members={TEAM} />
-          </div>
-
-          {/* Partners section - bottom */}
-          <div className="flex-1 flex flex-col justify-end pb-8 px-8">
-            <div className="max-w-5xl mx-auto w-full">
-              <p className="text-white/30 text-xs mb-4 text-center uppercase tracking-widest">
-                Partners & Clients
-              </p>
-              <LogoMarquee velocity={25} logoSize={60} rows={1} />
-            </div>
-          </div>
+        <div className="w-full h-full pb-56">
+          {/* Team list - takes full height minus partners */}
+          <ListView members={TEAM} />
         </div>
       </Visible>
+
+      {/* Partners banner - outside Visible for full width */}
+      <div className="absolute bottom-0 left-0 right-0 h-56 flex flex-col justify-center w-full bg-[#0f0f1a]/80 backdrop-blur-md border-t border-white/5 z-10 overflow-hidden">
+        <p className="text-white/50 text-sm md:text-base pt-4 mb-2 uppercase tracking-widest px-8 text-right">
+          _Partners & Clients
+        </p>
+        <ScrollVelocity
+          texts={[PARTNERS_ROW_1, PARTNERS_ROW_2]}
+          velocity={30}
+          className="partners-text"
+          numCopies={4}
+        />
+        {/* Gradient overlay - fades from solid on left to transparent on right */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to right, #0f0f1a 0%, #0f0f1a 15%, rgba(15,15,26,0.8) 25%, rgba(15,15,26,0) 40%, transparent 100%)',
+            zIndex: 50,
+          }}
+        />
+        <style jsx global>{`
+          .partners-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+          }
+          @media (min-width: 768px) {
+            .partners-text {
+              font-size: 1.25rem;
+            }
+          }
+        `}</style>
+      </div>
     </section>
   );
 }

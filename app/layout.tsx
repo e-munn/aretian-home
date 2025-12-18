@@ -1,15 +1,9 @@
 import type { Metadata } from 'next'
-import { Geo, JetBrains_Mono, Albert_Sans, Bebas_Neue, Inter } from 'next/font/google'
+import { JetBrains_Mono, Albert_Sans, Bebas_Neue, Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { CursorProvider } from '@/components/cursor/CursorProvider'
 import CursorWrapper from '@/components/cursor/CursorWrapper'
-
-const geo = Geo({
-  weight: '400',
-  variable: '--font-geo',
-  subsets: ['latin'],
-})
 
 const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
@@ -35,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className={`${inter.className} ${geo.variable} ${jetbrainsMono.variable} ${albertSans.variable} ${bebasNeue.variable} ${inter.variable} antialiased`}>
+      <body className={`${inter.className} ${jetbrainsMono.variable} ${albertSans.variable} ${bebasNeue.variable} ${inter.variable} antialiased`}>
         <CursorProvider>
           {children}
           <CursorWrapper />

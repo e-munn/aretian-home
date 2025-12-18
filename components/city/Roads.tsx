@@ -1,9 +1,12 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import * as THREE from 'three';
+
+// Flow animation duration in seconds
+const FLOW_DURATION = 60;
 
 // Road type classification
 const SIDEWALK_TYPES = ['footway', 'path', 'pedestrian', 'cycleway', 'steps'];
@@ -76,6 +79,8 @@ interface FlowParticlesProps {
 export function FlowParticles({ roads, color = '#cc7000', opacity = 0.9 }: FlowParticlesProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObject = useMemo(() => new THREE.Object3D(), []);
+  const startTimeRef = useRef<number | null>(null);
+  const [isStopped, setIsStopped] = useState(false);
 
   const particleRoads = useMemo(() => roads.slice(0, 100), [roads]);
   const particleCount = particleRoads.length * 4;
@@ -100,9 +105,30 @@ export function FlowParticles({ roads, color = '#cc7000', opacity = 0.9 }: FlowP
   }, [particleRoads]);
 
   useFrame(({ clock }) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || isStopped) return;
 
-    const time = (clock.getElapsedTime() * 100) % 500;
+    const currentTime = clock.getElapsedTime();
+
+    // Initialize start time on first frame
+    if (startTimeRef.current === null) {
+      startTimeRef.current = currentTime;
+    }
+
+    // Check if duration has elapsed
+    const elapsed = currentTime - startTimeRef.current;
+    if (elapsed >= FLOW_DURATION) {
+      // Hide all particles by moving them far away
+      for (let i = 0; i < particleCount; i++) {
+        tempObject.position.set(0, 0, -10000);
+        tempObject.updateMatrix();
+        meshRef.current.setMatrixAt(i, tempObject.matrix);
+      }
+      meshRef.current.instanceMatrix.needsUpdate = true;
+      setIsStopped(true);
+      return;
+    }
+
+    const time = (currentTime * 100) % 500;
     let idx = 0;
 
     for (const { path, totalLen, segLengths, offsets } of pathData) {
@@ -136,6 +162,9 @@ export function FlowParticles({ roads, color = '#cc7000', opacity = 0.9 }: FlowP
 
     meshRef.current.instanceMatrix.needsUpdate = true;
   });
+
+  // Don't render if stopped
+  if (isStopped) return null;
 
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, particleCount]} frustumCulled={false} renderOrder={0}>

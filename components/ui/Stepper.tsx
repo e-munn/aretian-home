@@ -9,6 +9,7 @@ import React, {
   ButtonHTMLAttributes,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import './Stepper.css';
 
 interface StepperProps {
   children: ReactNode;
@@ -29,6 +30,14 @@ interface StepperProps {
     currentStep: number;
     onStepClick: (step: number) => void;
   }) => ReactNode;
+  renderFooter?: (props: {
+    currentStep: number;
+    totalSteps: number;
+    isLastStep: boolean;
+    onBack: () => void;
+    onNext: () => void;
+    onComplete: () => void;
+  }) => ReactNode;
 }
 
 export default function Stepper({
@@ -46,6 +55,7 @@ export default function Stepper({
   nextButtonText = 'Continue',
   disableStepIndicators = false,
   renderStepIndicator,
+  renderFooter,
 }: StepperProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [direction, setDirection] = useState(0);
@@ -129,28 +139,39 @@ export default function Stepper({
         </StepContentWrapper>
 
         {!isCompleted && (
-          <div className={`stepper-footer ${footerClassName}`}>
-            <div
-              className={`stepper-nav ${currentStep !== 1 ? 'spread' : 'end'}`}
-            >
-              {currentStep !== 1 && (
-                <button
-                  onClick={handleBack}
-                  className={`stepper-back ${currentStep === 1 ? 'inactive' : ''}`}
-                  {...backButtonProps}
-                >
-                  {backButtonText}
-                </button>
-              )}
-              <button
-                onClick={isLastStep ? handleComplete : handleNext}
-                className="stepper-next"
-                {...nextButtonProps}
+          renderFooter ? (
+            renderFooter({
+              currentStep,
+              totalSteps,
+              isLastStep,
+              onBack: handleBack,
+              onNext: handleNext,
+              onComplete: handleComplete,
+            })
+          ) : (
+            <div className={`stepper-footer ${footerClassName}`}>
+              <div
+                className={`stepper-nav ${currentStep !== 1 ? 'spread' : 'end'}`}
               >
-                {isLastStep ? 'Send Message' : nextButtonText}
-              </button>
+                {currentStep !== 1 && (
+                  <button
+                    onClick={handleBack}
+                    className={`stepper-back ${currentStep === 1 ? 'inactive' : ''}`}
+                    {...backButtonProps}
+                  >
+                    {backButtonText}
+                  </button>
+                )}
+                <button
+                  onClick={isLastStep ? handleComplete : handleNext}
+                  className="stepper-next"
+                  {...nextButtonProps}
+                >
+                  {isLastStep ? 'Send Message' : nextButtonText}
+                </button>
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
     </div>

@@ -6,10 +6,11 @@ import {
   CitySection,
   ServicesSection,
   ArchitectureSection,
-  DesignSection,
+  ResearchSection,
   ProjectsSection,
   TeamSection,
   ContactSection,
+  FooterSection,
 } from '@/components/sections';
 
 // Define sections for navigation - ids match labels for clean URLs
@@ -24,14 +25,14 @@ const sections: NavSection[] = [
     description: 'Urban analytics, digital twins, master planning, and economic development services for cities worldwide.'
   },
   {
+    id: 'research',
+    label: 'Research',
+    description: 'Academic publications and urban research. Studying 100+ cities across five continents.'
+  },
+  {
     id: 'process',
     label: 'Process',
     description: 'How we work: collecting urban data, analyzing patterns, and deploying actionable insights for city transformation.'
-  },
-  {
-    id: 'design',
-    label: 'Design',
-    description: 'Design system and visual language. Consistent patterns for data visualization across urban contexts.'
   },
   {
     id: 'work',
@@ -52,11 +53,11 @@ const sections: NavSection[] = [
 
 export default function Home() {
   return (
-    <FullPageScroll sections={sections}>
+    <FullPageScroll sections={sections} extraSection={<FooterSection />}>
       <CitySection />
       <ServicesSection />
+      <ResearchSection />
       <ArchitectureSection />
-      <DesignSection />
       <ProjectsSection />
       <TeamSection />
       <ContactSection />

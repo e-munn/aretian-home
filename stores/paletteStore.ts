@@ -155,14 +155,20 @@ export const PALETTES: ColorPalette[] = [
 interface PaletteState {
   currentIndex: number;
   palette: ColorPalette;
+  customBuildingColor: string | null;
+  customBuildingOpacity: number | null;
   next: () => void;
   prev: () => void;
   setIndex: (index: number) => void;
+  setBuildingColor: (color: string | null) => void;
+  setBuildingOpacity: (opacity: number | null) => void;
 }
 
 export const usePaletteStore = create<PaletteState>((set) => ({
   currentIndex: 3,
   palette: PALETTES[3],
+  customBuildingColor: '#3c3c49',
+  customBuildingOpacity: 0.66,
 
   next: () => set((state) => {
     const newIndex = (state.currentIndex + 1) % PALETTES.length;
@@ -178,4 +184,12 @@ export const usePaletteStore = create<PaletteState>((set) => ({
     const safeIndex = Math.max(0, Math.min(index, PALETTES.length - 1));
     return { currentIndex: safeIndex, palette: PALETTES[safeIndex] };
   }),
+
+  setBuildingColor: (color: string | null) => set(() => ({
+    customBuildingColor: color,
+  })),
+
+  setBuildingOpacity: (opacity: number | null) => set(() => ({
+    customBuildingOpacity: opacity,
+  })),
 }));

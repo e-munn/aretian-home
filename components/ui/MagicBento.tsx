@@ -349,14 +349,14 @@ const GlobalSpotlight = ({ gridRef, disableAnimations = false, enabled = true, s
 };
 
 const BentoCardGrid = ({ children, gridRef }: { children: ReactNode; gridRef: React.RefObject<HTMLDivElement> }) => (
-  <div className="bento-section w-full h-full flex items-center justify-center p-6 md:p-10" ref={gridRef}>
+  <div className="bento-section w-full h-full flex items-start justify-center p-4 pt-2 md:p-6 md:pt-3" ref={gridRef}>
     <div
-      className="w-full h-full max-h-[90vh]"
+      className="w-full h-full"
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gridTemplateRows: 'repeat(3, 1fr)',
-        gap: '16px',
+        gap: 'clamp(8px, 1.5vh, 16px)',
         gridTemplateAreas: `
           "a a b b"
           "a a b b"
@@ -453,7 +453,7 @@ function BentoCardWithCorners({
         {card.icon && <div className="magic-bento-card__icon">{card.icon}</div>}
       </div>
       {card.customContent && (
-        <div className="magic-bento-card__custom flex-1 my-4">
+        <div className="magic-bento-card__custom flex-1" style={{ marginTop: 'clamp(8px, 1.5vh, 16px)', marginBottom: 'clamp(8px, 1.5vh, 16px)' }}>
           {card.customContent}
         </div>
       )}
@@ -490,8 +490,8 @@ const MagicBento = ({
       <style jsx global>{`
         .magic-bento-card {
           position: relative;
-          border-radius: 20px;
-          padding: 28px;
+          border-radius: clamp(12px, 2vh, 20px);
+          padding: clamp(16px, 2.5vh, 28px);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
@@ -505,12 +505,6 @@ const MagicBento = ({
         }
         .magic-bento-card:hover {
           border-color: rgba(255, 255, 255, 0.2);
-        }
-        @media (min-width: 768px) {
-          .magic-bento-card {
-            padding: 36px;
-            border-radius: 24px;
-          }
         }
         .magic-bento-card--border-glow::before {
           content: '';
@@ -526,27 +520,12 @@ const MagicBento = ({
           pointer-events: none;
         }
         .magic-bento-card__header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .magic-bento-card__label { font-size: 24px; font-family: var(--font-bebas-neue), sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255, 255, 255, 0.5); }
+        .magic-bento-card__label { font-size: clamp(20px, 4vh, 40px); font-family: var(--font-bebas-neue), sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255, 255, 255, 0.5); }
         .magic-bento-card__icon { color: rgba(255, 255, 255, 0.5); }
-        .magic-bento-card__icon svg { width: 32px; height: 32px; }
-        @media (min-width: 768px) {
-          .magic-bento-card__label { font-size: 36px; }
-          .magic-bento-card__icon svg { width: 40px; height: 40px; }
-        }
-        @media (min-width: 1200px) {
-          .magic-bento-card__label { font-size: 48px; }
-        }
-        .magic-bento-card__content { margin-top: 8px; }
-        .magic-bento-card__title { font-size: 28px !important; font-family: var(--font-bebas-neue), sans-serif; font-weight: 400; color: inherit; margin: 0 0 12px 0; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; }
-        .magic-bento-card__description { font-size: 13px; font-weight: 400; margin: 0; line-height: 1.6; letter-spacing: 0.01em; }
-        @media (min-width: 768px) {
-          .magic-bento-card__title { font-size: 40px !important; margin: 0 0 12px 0; }
-          .magic-bento-card__description { font-size: 14px; }
-        }
-        @media (min-width: 1200px) {
-          .magic-bento-card__title { font-size: 52px !important; }
-          .magic-bento-card__description { font-size: 15px; }
-        }
+        .magic-bento-card__icon svg { width: clamp(24px, 3vh, 36px); height: clamp(24px, 3vh, 36px); }
+        .magic-bento-card__content { margin-top: clamp(4px, 1vh, 8px); }
+        .magic-bento-card__title { font-size: clamp(24px, 4vh, 44px) !important; font-family: var(--font-bebas-neue), sans-serif; font-weight: 400; color: inherit; margin: 0 0 clamp(6px, 1vh, 12px) 0; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; }
+        .magic-bento-card__description { font-size: clamp(11px, 1.5vh, 15px); font-weight: 400; margin: 0; line-height: 1.5; letter-spacing: 0.01em; }
         .magic-bento-card--text-autohide .magic-bento-card__content { opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
         .magic-bento-card--text-autohide:hover .magic-bento-card__content { opacity: 1; transform: translateY(0); }
         .particle-container { transform-style: preserve-3d; }

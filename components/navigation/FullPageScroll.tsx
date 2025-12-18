@@ -10,20 +10,26 @@ import { useCursorContext } from '@/components/cursor/CursorProvider';
 
 // Context to share active section info with children
 type ColorMode = 'dark' | 'light';
-const SectionContext = createContext<{ activeIndex: number; colorMode: ColorMode }>({
+const SectionContext = createContext<{
+  activeIndex: number;
+  colorMode: ColorMode;
+  navigateToSection: (index: number) => void;
+}>({
   activeIndex: 0,
-  colorMode: 'dark'
+  colorMode: 'dark',
+  navigateToSection: () => {},
 });
 export const useSectionContext = () => useContext(SectionContext);
 
 // Section theme config - background color and mode (non-aretian sections)
 const SECTION_THEME: Record<string, { bg: string; mode: ColorMode }> = {
   services: { bg: '#fff5eb', mode: 'light' },
+  research: { bg: '#0f0f1a', mode: 'dark' },
   process: { bg: '#0f0f1a', mode: 'dark' },
-  design: { bg: '#0f0f1a', mode: 'dark' },
-  projects: { bg: '#0f0f1a', mode: 'dark' },
+  work: { bg: '#0f0f1a', mode: 'dark' },
   team: { bg: '#0f0f1a', mode: 'dark' },
   contact: { bg: '#0f0f1a', mode: 'dark' },
+  more: { bg: '#000000', mode: 'dark' },
 };
 
 // Global animated background
@@ -89,31 +95,37 @@ interface FullPageScrollProps {
   showBreaks?: boolean;
   breakHeight?: number;
   renderWindow?: number; // How many sections before/after active to render (default 1)
+  extraSection?: ReactNode; // Optional extra section after all nav sections (footer, etc.)
 }
 
 // Break height constant - disabled
 const BREAK_HEIGHT = 0;
 
-export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT, renderWindow = 1 }: FullPageScrollProps) {
+export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT, renderWindow = 1, extraSection }: FullPageScrollProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState<number[]>(sections.map(() => 0));
+  // Total sections includes the extra section if present
+  const totalSections = sections.length + (extraSection ? 1 : 0);
+  const [scrollProgress, setScrollProgress] = useState<number[]>(Array(totalSections).fill(0));
   const [visitedSections, setVisitedSections] = useState<Set<number>>(new Set([0])); // Track visited sections
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimating = useRef(false);
   const wheelAccumulator = useRef(0);
   const lastWheelTime = useRef(0);
 
+  // Check if we're on the extra section (last one, not in nav)
+  const isOnExtraSection = extraSection && activeIndex >= sections.length;
+
   // Mark sections as visited when they become active
   useEffect(() => {
     setVisitedSections(prev => {
       const next = new Set(prev);
       // Add current and adjacent sections to visited
-      for (let i = Math.max(0, activeIndex - renderWindow); i <= Math.min(sections.length - 1, activeIndex + renderWindow); i++) {
+      for (let i = Math.max(0, activeIndex - renderWindow); i <= Math.min(totalSections - 1, activeIndex + renderWindow); i++) {
         next.add(i);
       }
       return next;
     });
-  }, [activeIndex, renderWindow, sections.length]);
+  }, [activeIndex, renderWindow, totalSections]);
 
   // Check if a section should be rendered (within window or previously visited)
   const shouldRenderSection = useCallback((index: number): boolean => {
@@ -138,7 +150,7 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
       const viewportHeight = window.innerHeight;
       const sectionWithBreak = viewportHeight + (showBreaks ? breakHeight : 0);
 
-      const newProgress = sections.map((_, index) => {
+      const newProgress = Array(totalSections).fill(0).map((_, index) => {
         const sectionStart = index * sectionWithBreak;
         const sectionEnd = sectionStart + viewportHeight;
 
@@ -163,21 +175,24 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
 
     rafId = requestAnimationFrame(smoothUpdate);
     return () => cancelAnimationFrame(rafId);
-  }, [sections.length, showBreaks, breakHeight]);
+  }, [totalSections, showBreaks, breakHeight]);
 
   // Smooth scroll to section with dramatic easing
   const scrollToSection = useCallback((index: number, updateHash = true) => {
-    if (index < 0 || index >= sections.length || isAnimating.current) return;
+    if (index < 0 || index >= totalSections || isAnimating.current) return;
 
     isAnimating.current = true;
     setActiveIndex(index);
 
-    // Update URL hash
-    if (updateHash && typeof window !== 'undefined') {
+    // Update URL hash (skip for extra section)
+    if (updateHash && typeof window !== 'undefined' && index < sections.length) {
       const sectionId = sections[index]?.id;
       if (sectionId) {
         window.history.replaceState(null, '', `#${sectionId}`);
       }
+    } else if (updateHash && typeof window !== 'undefined' && index >= sections.length) {
+      // Clear hash for extra section
+      window.history.replaceState(null, '', window.location.pathname);
     }
 
     const container = containerRef.current;
@@ -216,7 +231,7 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     };
 
     requestAnimationFrame(animate);
-  }, [sections]);
+  }, [sections, totalSections]);
 
   // Handle initial hash and popstate (back/forward buttons)
   useEffect(() => {
@@ -335,12 +350,39 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeIndex, scrollToSection]);
 
+  // Handle window resize - snap to current section to prevent layout jumble
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout;
+
+    const handleResize = () => {
+      // Debounce resize to avoid too many updates
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const container = containerRef.current;
+        if (!container || isAnimating.current) return;
+
+        // Instantly snap to current section position
+        const breaksBeforeTarget = showBreaks ? activeIndex * breakHeight : 0;
+        const targetY = activeIndex * window.innerHeight + breaksBeforeTarget;
+        container.scrollTop = targetY;
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
+    };
+  }, [activeIndex, showBreaks, breakHeight]);
+
   const handleNavigate = useCallback((index: number) => {
     scrollToSection(index);
   }, [scrollToSection]);
 
   // Get current section's color mode
-  const currentSectionId = sections[activeIndex]?.id || 'aretian';
+  const currentSectionId = activeIndex < sections.length
+    ? (sections[activeIndex]?.id || 'aretian')
+    : 'more';
   const colorMode = SECTION_THEME[currentSectionId]?.mode || 'dark';
 
   // Sync cursor color with section color mode
@@ -351,29 +393,40 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
   }, [colorMode, setDarkMode]);
 
   return (
-    <SectionContext.Provider value={{ activeIndex, colorMode }}>
+    <SectionContext.Provider value={{ activeIndex, colorMode, navigateToSection: scrollToSection }}>
       <GlobalBackground sectionId={currentSectionId} />
 
-      <SideNav
-        sections={sections}
-        activeIndex={activeIndex}
-        onNavigate={handleNavigate}
-        colorMode={colorMode}
-      />
+      {/* Hide nav elements when on extra section */}
+      <motion.div
+        initial={false}
+        animate={{
+          opacity: isOnExtraSection ? 0 : 1,
+          y: isOnExtraSection ? -50 : 0,
+        }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        style={{ pointerEvents: isOnExtraSection ? 'none' : 'auto' }}
+      >
+        <SideNav
+          sections={sections}
+          activeIndex={activeIndex}
+          onNavigate={handleNavigate}
+          colorMode={colorMode}
+        />
 
-      <SectionStepper
-        totalSections={sections.length}
-        activeIndex={activeIndex}
-        onNavigate={handleNavigate}
-        colorMode={colorMode}
-      />
+        <SectionStepper
+          totalSections={sections.length}
+          activeIndex={activeIndex}
+          onNavigate={handleNavigate}
+          colorMode={colorMode}
+        />
+      </motion.div>
 
       <div
         ref={containerRef}
         className="h-screen overflow-hidden relative z-10"
         style={{ overscrollBehavior: 'none' }}
       >
-        <div style={{ height: `calc(${sections.length * 100}vh + ${totalBreakHeight}px)` }}>
+        <div style={{ height: `calc(${totalSections * 100}vh + ${totalBreakHeight}px)` }}>
           {children.map((child, index) => {
             const sectionId = sections[index]?.id || `section-${index}`;
             const nextSectionId = sections[index + 1]?.id;
@@ -412,6 +465,20 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
               </div>
             );
           })}
+
+          {/* Extra section (more) - not in nav */}
+          {extraSection && (
+            <div>
+              <Section
+                id="more"
+                index={sections.length}
+                scrollProgress={scrollProgress[sections.length] || 0}
+                isActive={activeIndex === sections.length}
+              >
+                {extraSection}
+              </Section>
+            </div>
+          )}
         </div>
       </div>
     </SectionContext.Provider>

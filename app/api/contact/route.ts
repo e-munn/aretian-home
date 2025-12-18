@@ -47,7 +47,8 @@ export async function POST(request: Request) {
     `;
 
     const { data, error } = await resend.emails.send({
-      from: 'Aretian Contact <contact@aretian.com>',
+      // Use Resend's onboarding domain until aretian.com is verified
+      from: 'Aretian Contact <onboarding@resend.dev>',
       to: RECIPIENTS,
       replyTo: email,
       subject,

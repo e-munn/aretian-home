@@ -18,11 +18,17 @@ export function SectionStepper({ totalSections, activeIndex, onNavigate, colorMo
   const disabledColor = colorMode === 'light' ? 'rgba(15, 15, 26, 0.2)' : 'rgba(255, 255, 255, 0.2)';
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center">
+    <motion.div
+      className="fixed bottom-8 z-50 flex flex-col items-center"
+      style={{ right: 24 }}
+      initial={{ opacity: 0, y: 60 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    >
       <motion.button
         onClick={() => canGoUp && onNavigate(activeIndex - 1)}
         disabled={!canGoUp}
-        className="p-1"
+        className="p-0.5"
         style={{
           color: canGoUp ? activeColor : disabledColor,
           cursor: canGoUp ? 'pointer' : 'default',
@@ -42,7 +48,7 @@ export function SectionStepper({ totalSections, activeIndex, onNavigate, colorMo
       <motion.button
         onClick={() => canGoDown && onNavigate(activeIndex + 1)}
         disabled={!canGoDown}
-        className="p-1"
+        className="p-0.5"
         style={{
           color: canGoDown ? activeColor : disabledColor,
           cursor: canGoDown ? 'pointer' : 'default',
@@ -58,6 +64,6 @@ export function SectionStepper({ totalSections, activeIndex, onNavigate, colorMo
           <ChevronDown size={28} strokeWidth={1.5} />
         </motion.div>
       </motion.button>
-    </div>
+    </motion.div>
   );
 }

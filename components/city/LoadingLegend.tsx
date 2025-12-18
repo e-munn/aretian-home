@@ -101,9 +101,9 @@ function LoadingIcon({
   size = 'md',
   layers,
 }: LoadingIconProps) {
-  const dimensions = size === 'sm' ? 24 : 40;
-  const iconSize = size === 'sm' ? 12 : 20;
-  const strokeWidth = size === 'sm' ? 2 : 2.5;
+  const dimensions = size === 'sm' ? 20 : 32;
+  const iconSize = size === 'sm' ? 10 : 16;
+  const strokeWidth = size === 'sm' ? 1.5 : 2;
 
   const revealed = useLayerStore((state) => state.revealed);
   const startTime = useLayerStore((state) => state.startTime);
@@ -200,7 +200,7 @@ function LoadingIcon({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-full mr-4 pr-2 flex items-center"
+            className="absolute right-full mr-4 flex items-center bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5"
           >
             <TextType
               text={label}
@@ -303,9 +303,9 @@ export function LoadingLegend() {
         {isVisible && (
           <>
             {/* Vertical icon column - right side, vertically centered */}
-            <div className="fixed z-50 top-0 right-0 h-full flex flex-col justify-center pr-6">
+            <div className="fixed z-50 top-0 right-0 h-full flex flex-col justify-center pr-3">
               <motion.div
-                className="flex flex-col items-center gap-3 bg-black/30 backdrop-blur-sm rounded-full px-3 py-6"
+                className="flex flex-col items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-2 py-4"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
@@ -331,9 +331,9 @@ export function LoadingLegend() {
 
                 {/* Data group - encapsulated by orange ring */}
                 <div
-                  className="relative flex flex-col items-center gap-3 py-3 px-2 rounded-full"
+                  className="relative flex flex-col items-center gap-2 py-2 px-1.5 rounded-full"
                   style={{
-                    border: '2px solid rgba(245, 158, 11, 0.4)',
+                    border: '1.5px solid rgba(245, 158, 11, 0.4)',
                     backgroundColor: 'rgba(245, 158, 11, 0.05)',
                   }}
                 >
@@ -362,12 +362,12 @@ export function LoadingLegend() {
                 {/* Explore button - same size as icons */}
                 <motion.button
                   onClick={handleExplore}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   title="Explore full city"
                 >
-                  <ArrowRight size={20} className="text-white/60" />
+                  <ArrowRight size={16} className="text-white/60" />
                 </motion.button>
               </motion.div>
             </div>

@@ -1,29 +1,42 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { MessageCircleQuestion } from 'lucide-react';
+import { Globe, Grid3X3 } from 'lucide-react';
+import { useState } from 'react';
 import { Visible } from '@/components/layout/Visible';
+import { useSectionContext } from '@/components/navigation/FullPageScroll';
 
-// ProjectGlobe temporarily disabled due to three-globe compatibility issue
-// const ProjectGlobe = dynamic(() => import('@/components/ui/ProjectGlobe').then(m => ({ default: m.ProjectGlobe })), {
-//   ssr: false,
-//   loading: () => (
-//     <div className="w-full h-full flex items-center justify-center text-white/30">
-//       <div className="flex items-center gap-2">
-//         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-//         <span className="text-sm">Loading globe...</span>
-//       </div>
-//     </div>
-//   ),
-// });
+// Awards and recognitions data with gold theme
+const AWARDS = [
+  { emoji: '🏆', text: 'UrbanNext and Actar Network Urban Design Firm' },
+  { emoji: '🎖️', text: 'Dan Schodek Excellence in Design Award - Harvard GSD' },
+  { emoji: '💡', text: 'Venture Incubation Program (VIP) Harvard Innovation Lab' },
+  { emoji: '🌿', text: 'Campus Innovation Award - Harvard Office for Sustainability' },
+  { emoji: '⭐', text: 'Tech and Startup Mover and Shaker Thought Leader - BostInno' },
+  { emoji: '🌍', text: 'Sustainable Cities and Communities Leadership Award - CogX2020' },
+  { emoji: '🎓', text: 'Fellows at School of Engineering and Applied Sciences - Harvard' },
+];
 
-// Real Aretian projects with coordinates
+const ProjectGlobe = dynamic(() => import('@/components/ui/ProjectGlobe'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center text-white/30">
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm">Loading globe...</span>
+      </div>
+    </div>
+  ),
+});
+
+// Real Aretian projects with coordinates - muted colors for grid view
 const PROJECTS = [
   {
     name: 'Barcelona Metropolitan Digital Twin',
     description: 'State-of-the-art City Digital Twin simulating infrastructure, socio-economic dynamics, mobility, and land use across 36 municipalities.',
     tags: ['Digital Twin', 'City Science'],
-    color: '#00C217',
+    color: '#4a9c5a',
     lat: 41.3851,
     lng: 2.1734,
     city: 'Barcelona, Spain',
@@ -31,8 +44,8 @@ const PROJECTS = [
   {
     name: 'Sant Feliu Innovation District',
     description: 'Strategic masterplan transforming Sant Feliu de Llobregat into an innovation district through urban regeneration and institutional collaboration.',
-    tags: ['Master Planning', 'Innovation'],
-    color: '#3b82f6',
+    tags: ['Planning', 'Innovation'],
+    color: '#6b8cba',
     lat: 41.3833,
     lng: 2.0448,
     city: 'Sant Feliu de Llobregat, Spain',
@@ -40,8 +53,8 @@ const PROJECTS = [
   {
     name: 'NOA Belém Airport District',
     description: 'Masterplanning to revitalize Belém\'s airport area into an innovation hub supporting economic growth, sustainability, and COP30.',
-    tags: ['Master Planning', 'Sustainability'],
-    color: '#14b8a6',
+    tags: ['Planning', 'Sustainability'],
+    color: '#5a9e94',
     lat: -1.4558,
     lng: -48.4902,
     city: 'Belém, Brazil',
@@ -50,7 +63,7 @@ const PROJECTS = [
     name: 'Esplugues Innovation District',
     description: 'Transforming Esplugues into a leading innovation hub through strategic urban and economic regeneration.',
     tags: ['Innovation', 'Economic Dev'],
-    color: '#8b5cf6',
+    color: '#8a7cb8',
     lat: 41.3764,
     lng: 2.0889,
     city: 'Esplugues de Llobregat, Spain',
@@ -58,8 +71,8 @@ const PROJECTS = [
   {
     name: 'São Paulo CITI Innovation District',
     description: 'Analyzing the network of talent and urban infrastructure and developing an innovation placemaking strategy.',
-    tags: ['Urban Analytics', 'Innovation'],
-    color: '#f59e0b',
+    tags: ['Analytics', 'Innovation'],
+    color: '#b8943a',
     lat: -23.5505,
     lng: -46.6333,
     city: 'São Paulo, Brazil',
@@ -68,7 +81,7 @@ const PROJECTS = [
     name: 'Global Cities Study',
     description: 'Revolutionizing urban planning with evidence-based city science across Amsterdam, Boston, Barcelona, Munich, and Stockholm.',
     tags: ['Research', 'City Science'],
-    color: '#ec4899',
+    color: '#b87a94',
     lat: 52.3676,
     lng: 4.9041,
     city: 'Amsterdam, Netherlands',
@@ -77,7 +90,7 @@ const PROJECTS = [
     name: 'NYC Real Estate Predictive Modelling',
     description: 'Informing real estate strategy with advanced analytics for targeted investments in the U.S. market.',
     tags: ['Analytics', 'Real Estate'],
-    color: '#6366f1',
+    color: '#7a7eb8',
     lat: 40.7128,
     lng: -74.006,
     city: 'New York City, USA',
@@ -85,8 +98,8 @@ const PROJECTS = [
   {
     name: 'Badalona Innovation District',
     description: 'Growing job opportunities and strategic industry investment through innovation district masterplanning.',
-    tags: ['Master Planning', 'Economic Dev'],
-    color: '#0ea5e9',
+    tags: ['Planning', 'Economic Dev'],
+    color: '#5a8ab8',
     lat: 41.4469,
     lng: 2.2450,
     city: 'Badalona, Spain',
@@ -95,7 +108,7 @@ const PROJECTS = [
     name: 'Massport Digital Transformation',
     description: 'Enhancing MassPort\'s operational efficiency with a unified Airport Business Intelligence platform.',
     tags: ['Digital Twin', 'Software'],
-    color: '#f97316',
+    color: '#b8784a',
     lat: 42.3656,
     lng: -71.0096,
     city: 'Boston, USA',
@@ -104,7 +117,7 @@ const PROJECTS = [
     name: 'EU Real Estate Investment',
     description: 'Targeting high-value industries and predicting office space demand for real estate development across Europe.',
     tags: ['Analytics', 'Real Estate'],
-    color: '#84cc16',
+    color: '#7a9c5a',
     lat: 50.8503,
     lng: 4.3517,
     city: 'Brussels, Belgium',
@@ -113,7 +126,7 @@ const PROJECTS = [
     name: 'MIT Coworking Space Analytics',
     description: 'Sensor-based mapping to measure the success of start-up teams working in MIT\'s coworking space.',
     tags: ['Research', 'Analytics'],
-    color: '#a855f7',
+    color: '#9a7ab8',
     lat: 42.3601,
     lng: -71.0942,
     city: 'Cambridge, USA',
@@ -121,8 +134,8 @@ const PROJECTS = [
   {
     name: 'Mexico City & Monterrey Districts',
     description: 'Revitalizing Mexico City and Monterrey with cutting-edge analytics for innovation district growth.',
-    tags: ['Master Planning', 'Innovation'],
-    color: '#ef4444',
+    tags: ['Planning', 'Innovation'],
+    color: '#b86a6a',
     lat: 19.4326,
     lng: -99.1332,
     city: 'Mexico City, Mexico',
@@ -155,12 +168,35 @@ function GridView({ projects }: { projects: typeof PROJECTS }) {
             }}
             data-cursor-corners
           >
-            {/* Tags at top */}
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* Title */}
+            <h3
+              className="text-base md:text-lg leading-tight mb-1.5 uppercase tracking-wide"
+              style={{
+                color: 'rgba(255,255,255,0.9)',
+                fontFamily: 'var(--font-bebas-neue)',
+              }}
+            >
+              {project.name}
+            </h3>
+
+            {/* Description - with ellipsis overflow */}
+            <p
+              className="text-[11px] leading-relaxed text-white/40 flex-1 overflow-hidden"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {project.description}
+            </p>
+
+            {/* Tags at bottom */}
+            <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
               {project.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-0.5 rounded-full"
+                  className="text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full"
                   style={{
                     color: project.color,
                     background: `${project.color}20`,
@@ -170,28 +206,6 @@ function GridView({ projects }: { projects: typeof PROJECTS }) {
                 </span>
               ))}
             </div>
-
-            {/* Title */}
-            <h3
-              className="text-base md:text-lg leading-tight mb-2 uppercase tracking-wide"
-              style={{
-                color: 'rgba(255,255,255,0.9)',
-                fontFamily: 'var(--font-bebas-neue)',
-              }}
-            >
-              {project.name}
-            </h3>
-
-            {/* Description - hidden on small, visible on hover */}
-            <p className="text-xs leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white/50">
-              {project.description}
-            </p>
-
-            {/* Hover icon */}
-            <MessageCircleQuestion
-              className="absolute bottom-3 right-3 w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0 transition-all duration-300"
-              style={{ color: project.color }}
-            />
 
             {/* Accent line at bottom */}
             <div
@@ -205,16 +219,65 @@ function GridView({ projects }: { projects: typeof PROJECTS }) {
   );
 }
 
-// Globe View - temporarily disabled
-// function GlobeView({ projects }: { projects: typeof PROJECTS }) {
-//   return (
-//     <div className="h-full w-full">
-//       <ProjectGlobe projects={projects} />
-//     </div>
-//   );
-// }
+// Globe View
+function GlobeView({ projects, isVisible }: { projects: typeof PROJECTS; isVisible: boolean }) {
+  return (
+    <div className="h-full w-full">
+      <ProjectGlobe projects={projects} isVisible={isVisible} />
+    </div>
+  );
+}
+
+// Awards Badge Marquee component
+function AwardsBadgeMarquee() {
+  const row1 = AWARDS.slice(0, 4);
+  const row2 = AWARDS.slice(4);
+
+  const renderRow = (awards: typeof AWARDS, direction: 1 | -1, rowIndex: number) => {
+    const duplicated = [...awards, ...awards, ...awards];
+    return (
+      <div className="relative overflow-hidden">
+        <motion.div
+          className="flex items-center gap-4"
+          animate={{ x: direction === -1 ? ['0%', '-33.33%'] : ['-33.33%', '0%'] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: 'loop',
+              duration: 25,
+              ease: 'linear',
+            },
+          }}
+        >
+          {duplicated.map((award, i) => (
+            <div
+              key={`${rowIndex}-${i}`}
+              className="flex items-center gap-2 shrink-0 p-1.5 px-4 rounded-full border border-white/10 bg-white/[0.03]"
+            >
+              <span className="text-base">{award.emoji}</span>
+              <span className="text-white/80 text-sm md:text-base whitespace-nowrap font-medium">
+                {award.text}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      {renderRow(row1, -1, 0)}
+      {renderRow(row2, 1, 1)}
+    </div>
+  );
+}
 
 export function ProjectsSection() {
+  const [view, setView] = useState<'grid' | 'globe'>('globe');
+  const { activeIndex } = useSectionContext();
+  const isVisible = activeIndex === 4; // Work section is index 4
+
   return (
     <section
       id="work"
@@ -225,9 +288,53 @@ export function ProjectsSection() {
         overflow: 'hidden',
       }}
     >
+      {/* View toggle */}
+      <div className="absolute top-6 right-6 z-10 flex gap-1 p-1.5 rounded-xl bg-black/40 border border-white/20 backdrop-blur-sm">
+        <button
+          onClick={() => setView('globe')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${view === 'globe' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
+          title="Globe view"
+        >
+          <Globe size={18} />
+          <span className="text-xs font-medium uppercase tracking-wide">Globe</span>
+        </button>
+        <button
+          onClick={() => setView('grid')}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
+          title="Grid view"
+        >
+          <Grid3X3 size={18} />
+          <span className="text-xs font-medium uppercase tracking-wide">Grid</span>
+        </button>
+      </div>
+
       <Visible>
-        <GridView projects={PROJECTS} />
+        <div className="w-full h-full pb-56">
+          {/* Projects view - takes full height minus awards */}
+          {view === 'grid' ? (
+            <GridView projects={PROJECTS} />
+          ) : (
+            <GlobeView projects={PROJECTS} isVisible={isVisible} />
+          )}
+        </div>
       </Visible>
+
+      {/* Awards banner - outside Visible for full width */}
+      <div className="absolute bottom-0 left-0 right-0 h-56 flex flex-col justify-center w-full bg-[#0f0f1a]/80 backdrop-blur-md border-t border-white/5 z-10 overflow-hidden">
+        <p className="text-white/50 text-sm md:text-base py-2 uppercase tracking-widest px-8 text-right flex items-center justify-end gap-2">
+          <span className="text-xl md:text-2xl leading-none">:</span>
+          <span>Awards & Recognitions</span>
+        </p>
+        <AwardsBadgeMarquee />
+        {/* Gradient overlay - fades from solid on left to transparent on right */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to right, #0f0f1a 0%, #0f0f1a 15%, rgba(15,15,26,0.8) 25%, rgba(15,15,26,0) 40%, transparent 100%)',
+            zIndex: 50,
+          }}
+        />
+      </div>
     </section>
   );
 }

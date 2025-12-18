@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { MessageCircleQuestion } from 'lucide-react';
 import type { CardData } from '@/components/ui/MagicBento';
 import { Visible } from '@/components/layout/Visible';
 import { AsyncBoundary } from '@/components/ui/AsyncBoundary';
@@ -48,54 +47,35 @@ const ANALYTICS_ITEMS = [
   },
 ];
 
-function NestedBento() {
+function AnalyticsList() {
   return (
-    <div
-      className="h-full gap-2 relative z-20"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: 'repeat(5, 1fr)',
-        gridTemplateAreas: `
-          "a a"
-          "a a"
-          "b b"
-          "c d"
-          "c d"
-        `
-      }}
-    >
-      {ANALYTICS_ITEMS.map((item) => (
-        <button
+    <div className="h-full relative z-20 flex flex-col justify-center gap-3">
+      {ANALYTICS_ITEMS.map((item, i) => (
+        <div
           key={item.area}
-          type="button"
-          className="group relative rounded-lg p-3 md:p-4 flex flex-col justify-start text-left transition-all hover:scale-[1.02]"
-          style={{
-            gridArea: item.area,
-            backgroundColor: `${item.color}15`,
-            border: `1px solid ${item.color}30`,
-            cursor: 'default',
-          }}
-          data-cursor-corners
+          className="group flex items-start gap-3 py-2 px-3 rounded-lg transition-all hover:bg-black/5"
         >
-          <div
-            className="text-base md:text-lg uppercase tracking-widest mb-1"
-            style={{ color: item.color, filter: 'brightness(0.8)', fontFamily: 'var(--font-bebas-neue), sans-serif' }}
+          <span
+            className="text-lg font-medium opacity-30 mt-0.5"
+            style={{ color: item.color, fontFamily: 'var(--font-bebas-neue)' }}
           >
-            {item.label}
+            0{i + 1}
+          </span>
+          <div className="flex-1">
+            <div
+              className="uppercase tracking-wider text-sm font-semibold mb-0.5"
+              style={{ color: item.color }}
+            >
+              {item.label}
+            </div>
+            <div
+              className="text-xs leading-relaxed opacity-70"
+              style={{ color: item.color }}
+            >
+              {item.description}
+            </div>
           </div>
-          <div
-            className="text-xs md:text-sm leading-snug"
-            style={{ color: item.color, filter: 'brightness(0.7)' }}
-          >
-            {item.description}
-          </div>
-          {/* Hover icon - slides in from left */}
-          <MessageCircleQuestion
-            className="absolute bottom-3 right-3 w-5 h-5 opacity-0 -translate-x-3 group-hover:opacity-70 group-hover:translate-x-0 transition-all duration-300 ease-out"
-            style={{ color: item.color }}
-          />
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -117,48 +97,35 @@ const SOFTWARE_ITEMS = [
   },
 ];
 
-function SoftwareBento() {
+function SoftwareList() {
   return (
-    <div
-      className="h-full gap-2 relative z-20"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr',
-        gridTemplateRows: '1fr 1fr',
-        gridTemplateAreas: '"a" "b"'
-      }}
-    >
-      {SOFTWARE_ITEMS.map((item) => (
-        <button
+    <div className="h-full relative z-20 flex flex-col justify-center gap-3">
+      {SOFTWARE_ITEMS.map((item, i) => (
+        <div
           key={item.area}
-          type="button"
-          className="group relative rounded-lg p-3 md:p-4 flex flex-col justify-start text-left transition-all hover:scale-[1.02]"
-          style={{
-            gridArea: item.area,
-            backgroundColor: `${item.color}15`,
-            border: `1px solid ${item.color}30`,
-            cursor: 'default',
-          }}
-          data-cursor-corners
+          className="group flex items-start gap-3 py-2 px-3 rounded-lg transition-all hover:bg-black/5"
         >
-          <div
-            className="text-base md:text-lg uppercase tracking-widest mb-1"
-            style={{ color: item.color, filter: 'brightness(0.8)', fontFamily: 'var(--font-bebas-neue), sans-serif' }}
+          <span
+            className="text-lg font-medium opacity-30 mt-0.5"
+            style={{ color: item.color, fontFamily: 'var(--font-bebas-neue)' }}
           >
-            {item.label}
+            0{i + 1}
+          </span>
+          <div className="flex-1">
+            <div
+              className="uppercase tracking-wider text-sm font-semibold mb-0.5"
+              style={{ color: item.color }}
+            >
+              {item.label}
+            </div>
+            <div
+              className="text-xs leading-relaxed opacity-70"
+              style={{ color: item.color }}
+            >
+              {item.description}
+            </div>
           </div>
-          <div
-            className="text-xs md:text-sm leading-snug"
-            style={{ color: item.color, filter: 'brightness(0.7)' }}
-          >
-            {item.description}
-          </div>
-          {/* Hover icon - slides in from left */}
-          <MessageCircleQuestion
-            className="absolute bottom-3 right-3 w-5 h-5 opacity-0 -translate-x-3 group-hover:opacity-70 group-hover:translate-x-0 transition-all duration-300 ease-out"
-            style={{ color: item.color }}
-          />
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -172,7 +139,7 @@ const SERVICES: CardData[] = [
     title: 'Urban Analytics',
     description: 'Data-driven insights using advanced analytics to understand city patterns and inform decision-making.',
     label: 'Analytics',
-    customContent: <NestedBento />,
+    customContent: <AnalyticsList />,
   },
   {
     color: '#f59e0b',  // amber-500
@@ -189,7 +156,7 @@ const SERVICES: CardData[] = [
     title: 'Software',
     description: 'Aretian develops custom digital tools to enhance decision-making for cities and organizations.',
     label: 'Software',
-    customContent: <SoftwareBento />,
+    customContent: <SoftwareList />,
   },
 ];
 
