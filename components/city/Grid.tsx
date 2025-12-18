@@ -15,10 +15,11 @@ export const GRID_EXTENTS = {
   small: 800,   // Mobile - focused on ~4 building blocks
 };
 
-// Animation constants - subtle hover effect
-const PROXIMITY = 200; // radius of mouse influence
-const RETURN_SPEED = 0.08; // faster elastic return for snappier feel
-const SCALE_MULTIPLIER = 1.5; // max scale boost (1 + 1.5 = 2.5x at center)
+// Animation constants - prominent hover effect
+const PROXIMITY = 300; // radius of mouse influence
+const RETURN_SPEED = 0.12; // faster elastic return for snappier feel
+const SCALE_MULTIPLIER = 4; // max scale boost (1 + 4 = 5x at center)
+const BRIGHTNESS_BOOST = 2; // max brightness multiplier at center
 
 // Generate rotated dot grid
 function generateDotGrid(extent: number, spacing: number, angle: number) {
@@ -65,25 +66,31 @@ export function DotGrid({
   // Plane at z=-35 (scene at z=-40, grid at z=5 relative to scene)
   const plane = useRef(new THREE.Plane(new THREE.Vector3(0, 0, 1), 35));
   const tempObject = useRef(new THREE.Object3D());
-  // Track current scale for smooth transitions
+  // Track current scale and brightness for smooth transitions
   const scalesRef = useRef<Float32Array | null>(null);
+  const brightnessRef = useRef<Float32Array | null>(null);
+  const baseColor = useMemo(() => new THREE.Color(color), [color]);
+  const tempColor = useRef(new THREE.Color());
 
-  // Initialize instance matrices and scales array
+  // Initialize instance matrices, scales, and colors
   useEffect(() => {
     if (!meshRef.current) return;
     const mesh = meshRef.current;
     const obj = tempObject.current;
 
-    // Initialize scales array
+    // Initialize scales and brightness arrays
     scalesRef.current = new Float32Array(dots.length).fill(1);
+    brightnessRef.current = new Float32Array(dots.length).fill(1);
 
     dots.forEach((dot, i) => {
       obj.position.set(dot.x, dot.y, 0);
       obj.updateMatrix();
       mesh.setMatrixAt(i, obj.matrix);
+      mesh.setColorAt(i, baseColor);
     });
     mesh.instanceMatrix.needsUpdate = true;
-  }, [dots]);
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [dots, baseColor]);
 
   // Handle mouse move - track activity and NDC position
   useEffect(() => {
@@ -120,13 +127,14 @@ export function DotGrid({
     };
   }, [gl]);
 
-  // Animation frame - smooth proximity-based scale with activity detection
+  // Animation frame - smooth proximity-based scale and brightness with activity detection
   useFrame(() => {
-    if (!meshRef.current || !scalesRef.current) return;
+    if (!meshRef.current || !scalesRef.current || !brightnessRef.current) return;
     const mesh = meshRef.current;
     const mouse = mouseRef.current;
     const obj = tempObject.current;
     const scales = scalesRef.current;
+    const brightness = brightnessRef.current;
 
     // Check if mouse has been inactive for more than 150ms
     const now = performance.now();
@@ -150,13 +158,15 @@ export function DotGrid({
     }
 
     const proxSq = PROXIMITY * PROXIMITY;
-    let needsUpdate = false;
+    let needsMatrixUpdate = false;
+    let needsColorUpdate = false;
 
     for (let i = 0; i < dots.length; i++) {
       const dot = dots[i];
 
-      // Calculate target scale
+      // Calculate target scale and brightness
       let targetScale = 1;
+      let targetBrightness = 1;
       if (mouse.isActive) {
         const dx = dot.x - mouseLocal.x;
         const dy = dot.y - mouseLocal.y;
@@ -166,20 +176,33 @@ export function DotGrid({
           const dist = Math.sqrt(distSq);
           const t = 1 - dist / PROXIMITY;
           targetScale = 1 + t * t * SCALE_MULTIPLIER;
+          targetBrightness = 1 + t * t * BRIGHTNESS_BOOST;
         }
       }
 
       // Smoothly interpolate current scale toward target
       const currentScale = scales[i];
-      const diff = targetScale - currentScale;
-
-      // Only update if there's a meaningful difference
-      if (Math.abs(diff) > 0.001) {
-        scales[i] = currentScale + diff * RETURN_SPEED;
-        needsUpdate = true;
+      const scaleDiff = targetScale - currentScale;
+      if (Math.abs(scaleDiff) > 0.001) {
+        scales[i] = currentScale + scaleDiff * RETURN_SPEED;
+        needsMatrixUpdate = true;
       } else if (scales[i] !== targetScale) {
         scales[i] = targetScale;
-        needsUpdate = true;
+        needsMatrixUpdate = true;
+      }
+
+      // Smoothly interpolate brightness toward target
+      const currentBrightness = brightness[i];
+      const brightDiff = targetBrightness - currentBrightness;
+      let brightnessChanged = false;
+      if (Math.abs(brightDiff) > 0.001) {
+        brightness[i] = currentBrightness + brightDiff * RETURN_SPEED;
+        brightnessChanged = true;
+        needsColorUpdate = true;
+      } else if (brightness[i] !== targetBrightness) {
+        brightness[i] = targetBrightness;
+        brightnessChanged = true;
+        needsColorUpdate = true;
       }
 
       // Update position and scale
@@ -187,10 +210,19 @@ export function DotGrid({
       obj.scale.set(scales[i], scales[i], 1);
       obj.updateMatrix();
       mesh.setMatrixAt(i, obj.matrix);
+
+      // Update color with brightness for this specific dot
+      if (brightnessChanged) {
+        tempColor.current.copy(baseColor).multiplyScalar(brightness[i]);
+        mesh.setColorAt(i, tempColor.current);
+      }
     }
 
-    if (needsUpdate) {
+    if (needsMatrixUpdate) {
       mesh.instanceMatrix.needsUpdate = true;
+    }
+    if (needsColorUpdate && mesh.instanceColor) {
+      mesh.instanceColor.needsUpdate = true;
     }
   });
 
@@ -206,7 +238,6 @@ export function DotGrid({
       <meshBasicMaterial
         transparent
         opacity={opacity}
-        color={color}
         depthWrite={false}
         toneMapped={false}
       />

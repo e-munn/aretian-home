@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, ReactNode, createContext, useContext } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { SideNav, NavSection } from './SideNav';
+import { SectionStepper } from './SectionStepper';
 import { SectionBreak } from '@/components/layout/SectionBreak';
 import { usePaletteStore } from '@/stores/paletteStore';
+import { useCursorContext } from '@/components/cursor/CursorProvider';
 
 // Context to share active section info with children
 type ColorMode = 'dark' | 'light';
@@ -16,7 +18,7 @@ export const useSectionContext = () => useContext(SectionContext);
 
 // Section theme config - background color and mode (non-aretian sections)
 const SECTION_THEME: Record<string, { bg: string; mode: ColorMode }> = {
-  services: { bg: '#1a2a3a', mode: 'dark' },
+  services: { bg: '#fff5eb', mode: 'light' },
   process: { bg: '#0f0f1a', mode: 'dark' },
   design: { bg: '#0f0f1a', mode: 'dark' },
   projects: { bg: '#0f0f1a', mode: 'dark' },
@@ -46,35 +48,6 @@ function GlobalBackground({ sectionId }: { sectionId: string }) {
   );
 }
 
-// Bottom-right section description
-function SectionDescription({ description, colorMode }: { description?: string; colorMode: ColorMode }) {
-  const textColor = colorMode === 'light' ? 'rgba(15, 15, 26, 0.6)' : 'rgba(255, 255, 255, 0.7)';
-
-  return (
-    <div className="fixed bottom-8 right-8 z-50 max-w-sm pointer-events-none">
-      <AnimatePresence mode="wait">
-        {description && (
-          <motion.div
-            key={description}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="text-right"
-          >
-            <motion.p
-              className="text-sm leading-relaxed m-0 font-google"
-              animate={{ color: textColor }}
-              transition={{ duration: 0.8 }}
-            >
-              {description}
-            </motion.p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 interface SectionProps {
   id: string;
@@ -91,14 +64,17 @@ function Section({ id, children, scrollProgress, isActive }: SectionProps) {
   const scale = 1 - scrollProgress * 0.08; // More noticeable scale down
   const translateY = scrollProgress * -30; // Slight upward drift as it blurs
 
+  // Don't apply transform when active to prevent jitter on scroll back
+  const shouldTransform = !isActive && scrollProgress > 0;
+
   return (
     <section
       id={id}
       className="h-screen w-full relative"
       style={{
-        filter: scrollProgress > 0 ? `blur(${blur}px)` : 'none',
+        filter: scrollProgress > 0 && !isActive ? `blur(${blur}px)` : 'none',
         opacity: isActive ? 1 : opacity,
-        transform: `scale(${scale}) translateY(${translateY}px)`,
+        transform: shouldTransform ? `scale(${scale}) translateY(${translateY}px)` : 'none',
         transition: 'filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out',
       }}
     >
@@ -112,18 +88,41 @@ interface FullPageScrollProps {
   children: ReactNode[];
   showBreaks?: boolean;
   breakHeight?: number;
+  renderWindow?: number; // How many sections before/after active to render (default 1)
 }
 
 // Break height constant - disabled
 const BREAK_HEIGHT = 0;
 
-export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT }: FullPageScrollProps) {
+export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT, renderWindow = 1 }: FullPageScrollProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [scrollProgress, setScrollProgress] = useState<number[]>(sections.map(() => 0));
+  const [visitedSections, setVisitedSections] = useState<Set<number>>(new Set([0])); // Track visited sections
   const containerRef = useRef<HTMLDivElement>(null);
   const isAnimating = useRef(false);
   const wheelAccumulator = useRef(0);
   const lastWheelTime = useRef(0);
+
+  // Mark sections as visited when they become active
+  useEffect(() => {
+    setVisitedSections(prev => {
+      const next = new Set(prev);
+      // Add current and adjacent sections to visited
+      for (let i = Math.max(0, activeIndex - renderWindow); i <= Math.min(sections.length - 1, activeIndex + renderWindow); i++) {
+        next.add(i);
+      }
+      return next;
+    });
+  }, [activeIndex, renderWindow, sections.length]);
+
+  // Check if a section should be rendered (within window or previously visited)
+  const shouldRenderSection = useCallback((index: number): boolean => {
+    // Always render if within the render window of active section
+    if (Math.abs(index - activeIndex) <= renderWindow) return true;
+    // Optionally keep visited sections rendered (comment out to be more aggressive)
+    // return visitedSections.has(index);
+    return false;
+  }, [activeIndex, renderWindow]);
 
   // Calculate total height including breaks
   const sectionHeight = typeof window !== 'undefined' ? window.innerHeight : 1000;
@@ -254,7 +253,42 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     const container = containerRef.current;
     if (!container) return;
 
+    // Track boundary scroll accumulator for scrollable children
+    let boundaryAccumulator = 0;
+    let lastBoundaryTime = 0;
+    const boundaryThreshold = 500; // Extra scroll needed at boundary before section change (high to prevent accidents)
+
     const handleWheel = (e: WheelEvent) => {
+      // Check if event originated from a scrollable child
+      const target = e.target as HTMLElement;
+      const scrollableParent = target.closest('[data-scrollable]');
+
+      if (scrollableParent) {
+        const el = scrollableParent as HTMLElement;
+        const canScrollUp = el.scrollTop > 0;
+        const canScrollDown = el.scrollTop < el.scrollHeight - el.clientHeight - 1; // 1px tolerance
+
+        // Let the child handle scrolling if it can scroll in that direction
+        if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+          boundaryAccumulator = 0; // Reset boundary accumulator when scrolling normally
+          return; // Don't prevent default, let child scroll
+        }
+
+        // At boundary - accumulate scroll before allowing section change
+        const now = Date.now();
+        if (now - lastBoundaryTime > 300) {
+          boundaryAccumulator = 0; // Reset if paused
+        }
+        lastBoundaryTime = now;
+        boundaryAccumulator += Math.abs(e.deltaY);
+
+        if (boundaryAccumulator < boundaryThreshold) {
+          e.preventDefault();
+          return; // Not enough scroll at boundary yet
+        }
+        // Enough boundary scroll - fall through to section navigation
+      }
+
       e.preventDefault();
 
       if (isAnimating.current) return;
@@ -274,8 +308,10 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
 
       if (wheelAccumulator.current > threshold) {
         scrollToSection(activeIndex + 1);
+        boundaryAccumulator = 0; // Reset after section change
       } else if (wheelAccumulator.current < -threshold) {
         scrollToSection(activeIndex - 1);
+        boundaryAccumulator = 0; // Reset after section change
       }
     };
 
@@ -307,12 +343,26 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
   const currentSectionId = sections[activeIndex]?.id || 'aretian';
   const colorMode = SECTION_THEME[currentSectionId]?.mode || 'dark';
 
+  // Sync cursor color with section color mode
+  const { setDarkMode } = useCursorContext();
+  useEffect(() => {
+    // Cursor should be dark (black) in light mode sections, white in dark mode sections
+    setDarkMode(colorMode === 'dark');
+  }, [colorMode, setDarkMode]);
+
   return (
     <SectionContext.Provider value={{ activeIndex, colorMode }}>
       <GlobalBackground sectionId={currentSectionId} />
 
       <SideNav
         sections={sections}
+        activeIndex={activeIndex}
+        onNavigate={handleNavigate}
+        colorMode={colorMode}
+      />
+
+      <SectionStepper
+        totalSections={sections.length}
         activeIndex={activeIndex}
         onNavigate={handleNavigate}
         colorMode={colorMode}
@@ -329,17 +379,27 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
             const nextSectionId = sections[index + 1]?.id;
             const currentTheme = SECTION_THEME[sectionId] || { bg: '#0f0f1a', mode: 'dark' };
             const nextTheme = nextSectionId ? SECTION_THEME[nextSectionId] : currentTheme;
+            const shouldRender = shouldRenderSection(index);
 
             return (
               <div key={sectionId}>
-                <Section
-                  id={sectionId}
-                  index={index}
-                  scrollProgress={scrollProgress[index] || 0}
-                  isActive={activeIndex === index}
-                >
-                  {child}
-                </Section>
+                {shouldRender ? (
+                  <Section
+                    id={sectionId}
+                    index={index}
+                    scrollProgress={scrollProgress[index] || 0}
+                    isActive={activeIndex === index}
+                  >
+                    {child}
+                  </Section>
+                ) : (
+                  // Placeholder for unrendered sections - maintains scroll height
+                  <div
+                    id={sectionId}
+                    className="h-screen w-full"
+                    style={{ background: currentTheme.bg }}
+                  />
+                )}
                 {/* Add break between sections (except after last) */}
                 {showBreaks && index < children.length - 1 && (
                   <SectionBreak

@@ -26,7 +26,7 @@
   min-height: 200px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   overflow: hidden;
   transition: transform 0.3s ease;
   --glow-x: 50%;
@@ -78,7 +78,7 @@
 }
 
 .magic-bento-card__content {
-  margin-top: auto;
+  margin-top: 8px;
 }
 
 .magic-bento-card__title {

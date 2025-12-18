@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import DecryptedText from '@/components/DecryptedText';
 
 export interface NavSection {
   id: string;
@@ -18,23 +18,10 @@ interface SideNavProps {
   colorMode?: ColorMode;
 }
 
-const FONTS = [
-  { key: '1', name: 'Google Sans', family: "'Google Sans', sans-serif" },
-  { key: '2', name: 'Space Grotesk', family: 'var(--font-space-grotesk)' },
-  { key: '3', name: 'Outfit', family: 'var(--font-outfit)' },
-  { key: '4', name: 'Urbanist', family: 'var(--font-urbanist)' },
-  { key: '5', name: 'Plus Jakarta Sans', family: 'var(--font-plus-jakarta)' },
-  { key: '6', name: 'Albert Sans', family: 'var(--font-albert-sans)' },
-  { key: '7', name: 'Josefin Sans', family: 'var(--font-josefin-sans)' },
-  { key: '8', name: 'Rubik', family: 'var(--font-rubik)' },
-  { key: '9', name: 'DM Sans', family: 'var(--font-dm-sans)' },
-  { key: '0', name: 'Sora', family: 'var(--font-sora)' },
-];
+// Nav font for non-Aretian items
+const NAV_FONT = 'var(--font-albert-sans)';
 
 export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' }: SideNavProps) {
-  const [fontIndex] = useState(5); // Albert Sans - fixed font
-
-  const currentFont = FONTS[fontIndex];
 
   // Text colors based on color mode
   const textColor = colorMode === 'light' ? '#0f0f1a' : '#ffffff';
@@ -42,47 +29,125 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
   return (
     <div className="fixed left-0 top-0 bottom-0 z-[100] w-screen h-screen flex flex-col pointer-events-none">
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col justify-center px-8">
-        <ul className="flex flex-col gap-2 list-none m-0 p-0">
-          {sections.map((section, index) => (
-            <motion.li
-              key={section.id}
-              initial={false}
-              animate={{
-                opacity: activeIndex === index ? 1 : 0.3,
-                scale: activeIndex === index ? 1.02 : 1,
-              }}
-              transition={{
-                duration: 0.1,
-                ease: 'linear',
-              }}
-            >
-              <button
-                onClick={() => onNavigate?.(index)}
-                className="pointer-events-auto cursor-pointer text-left bg-transparent border-none p-0 m-0"
-                aria-label={`Go to ${section.label}`}
+      <nav className="flex-1 flex flex-col pt-6 pb-8 px-8">
+        <ul className="flex flex-col justify-between h-full list-none m-0 p-0">
+          {sections.map((section, index) => {
+            const isFirst = index === 0;
+            const fontSize = isFirst ? 'clamp(4.5rem, 7vw, 9rem)' : 'clamp(3.5rem, 5.5vw, 7rem)';
+            const fontFamily = isFirst ? 'var(--font-geo)' : NAV_FONT;
+            const fontWeight = isFirst ? 800 : 600;
+            const letterSpacing = isFirst ? '0.15em' : '0.05em';
+
+            // Eased stagger - starts fast, slows down
+            const staggerDelay = Math.pow(index, 1.5) * 0.08;
+
+            return (
+              <motion.li
+                key={section.id}
+                initial={{ opacity: 0, filter: 'blur(20px)', y: 20 }}
+                animate={{
+                  opacity: activeIndex === index ? 1 : 0.5,
+                  filter: 'blur(0px)',
+                  scale: activeIndex === index ? 1.02 : 1,
+                  y: 0,
+                }}
+                transition={{
+                  duration: 1.2,
+                  delay: staggerDelay,
+                  ease: [0.22, 1, 0.36, 1],
+                  filter: { duration: 1.4, delay: staggerDelay },
+                  opacity: { duration: 0.3, delay: staggerDelay + 0.2 },
+                }}
               >
-                <motion.span
-                  className="uppercase whitespace-nowrap"
-                  animate={{ color: textColor }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    fontSize: index === 0 ? 'clamp(4rem, 10vw, 8rem)' : 'clamp(3rem, 8vw, 6rem)',
-                    lineHeight: 0.85,
-                    letterSpacing: index === 0 ? '0.15em' : 'normal',
-                    fontWeight: index === 0 ? 800 : 600,
-                    fontFamily: index === 0 ? 'var(--font-geo)' : currentFont.family,
-                  }}
-                >
-                  {section.label}
-                </motion.span>
-              </button>
-            </motion.li>
-          ))}
+                <div className="flex items-center gap-4 flex-nowrap">
+                  <button
+                    onClick={() => onNavigate?.(index)}
+                    className="pointer-events-auto cursor-pointer text-left bg-transparent border-none p-0 m-0"
+                    aria-label={`Go to ${section.label}`}
+                  >
+                    <motion.span
+                      animate={{ color: textColor }}
+                      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                      style={{
+                        fontSize,
+                        fontFamily,
+                        fontWeight,
+                        letterSpacing,
+                        lineHeight: 0.85,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {section.label}
+                    </motion.span>
+                  </button>
+                  <AnimatePresence>
+                    {isFirst && activeIndex === 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, filter: 'blur(8px)', x: -20 }}
+                        animate={{
+                          opacity: 1,
+                          filter: 'blur(0px)',
+                          x: 0,
+                          color: colorMode === 'light' ? 'rgba(15, 15, 26, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+                        }}
+                        exit={{ opacity: 0, filter: 'blur(12px)', x: 20 }}
+                        transition={{
+                          duration: 0.8,
+                          ease: [0.22, 1, 0.36, 1],
+                          exit: { duration: 0.5, ease: [0.4, 0, 1, 1] }
+                        }}
+                        className="shrink-0"
+                        style={{
+                          fontFamily: 'var(--font-geo)',
+                          fontWeight: 600,
+                          letterSpacing: '0.05em',
+                        }}
+                      >
+                        {/* Desktop - single line */}
+                        <span
+                          className="hidden min-[840px]:inline"
+                          style={{ fontSize: 'clamp(2.5rem, 4vw, 5rem)', whiteSpace: 'nowrap' }}
+                        >
+                          <DecryptedText
+                            text="- urban analytics & design"
+                            animateOn="view"
+                            characters=";:."
+                            speed={80}
+                            sequential={true}
+                            revealDirection="start"
+                          />
+                        </span>
+                        {/* Mobile - two lines */}
+                        <span
+                          className="inline min-[840px]:hidden flex flex-col leading-tight"
+                          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)' }}
+                        >
+                          <DecryptedText
+                            text="- urban analytics"
+                            animateOn="view"
+                            characters=";:."
+                            speed={80}
+                            sequential={true}
+                            revealDirection="start"
+                          />
+                          <DecryptedText
+                            text="& design"
+                            animateOn="view"
+                            characters=";:."
+                            speed={80}
+                            sequential={true}
+                            revealDirection="start"
+                          />
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.li>
+            );
+          })}
         </ul>
       </nav>
-
-{/* Font picker hidden - press 1-9, 0 to change */}
     </div>
   );
 }

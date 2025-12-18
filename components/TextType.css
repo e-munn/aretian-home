@@ -1,5 +1,8 @@
 .text-type {
   display: inline-block;
+}
+
+.text-type:not(.whitespace-nowrap):not(.\!whitespace-nowrap) {
   white-space: pre-wrap;
 }
 

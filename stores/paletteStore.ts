@@ -15,7 +15,7 @@ export const PALETTES: ColorPalette[] = [
   { bg: '#0a0a10', building: '#1a1a2a', dotGrid: '#e8a87c', buildingOpacity: 0.85, name: 'Warm Sunset' },
   { bg: '#0a0a12', building: '#1a1a2e', dotGrid: '#f4b183', buildingOpacity: 0.75, name: 'Peach Glow' },
   { bg: '#08080e', building: '#161624', dotGrid: '#d4956a', buildingOpacity: 0.9, name: 'Copper' },
-  { bg: '#0c0c14', building: '#1e1e30', dotGrid: '#ffb347', buildingOpacity: 0.7, name: 'Golden Hour' },
+  { bg: '#0c0c14', building: '#1e1e30', dotGrid: '#4a3818', buildingOpacity: 0.7, name: 'Golden Hour' },
   { bg: '#0a0a0f', building: '#181828', dotGrid: '#e09f6b', buildingOpacity: 0.8, name: 'Amber Glow' },
 
   // Coral & rose
@@ -161,8 +161,8 @@ interface PaletteState {
 }
 
 export const usePaletteStore = create<PaletteState>((set) => ({
-  currentIndex: 0,
-  palette: PALETTES[0],
+  currentIndex: 3,
+  palette: PALETTES[3],
 
   next: () => set((state) => {
     const newIndex = (state.currentIndex + 1) % PALETTES.length;

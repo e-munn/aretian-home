@@ -1,19 +1,36 @@
 'use client';
 
 import { memo } from 'react';
-import { NodeProps } from '@xyflow/react';
+import { NodeProps, Handle, Position } from '@xyflow/react';
 
 export interface GroupNodeData {
   label: string;
   color?: string;
+  hideTopHandle?: boolean;
+  hideBottomHandle?: boolean;
 }
 
 function GroupNodeComponent({ data }: NodeProps) {
   const nodeData = data as GroupNodeData;
-  const { label, color = '#3ecf8e' } = nodeData;
+  const { label, color = '#3ecf8e', hideTopHandle, hideBottomHandle } = nodeData;
 
   return (
-    <div>
+    <div className="relative w-full h-full">
+      {/* Top handle (target) - hidden for Collection */}
+      {!hideTopHandle && (
+        <Handle
+          type="target"
+          position={Position.Top}
+          style={{
+            background: color,
+            width: 8,
+            height: 8,
+            border: 'none',
+            top: -4,
+          }}
+        />
+      )}
+
       {/* Header bar only - no background */}
       <div
         style={{
@@ -26,16 +43,32 @@ function GroupNodeComponent({ data }: NodeProps) {
       >
         <span
           style={{
-            fontSize: '12px',
-            fontWeight: 700,
+            fontSize: '28px',
+            fontFamily: 'var(--font-bebas-neue), sans-serif',
+            fontWeight: 400,
             color: color,
             textTransform: 'uppercase',
-            letterSpacing: '2px',
+            letterSpacing: '4px',
           }}
         >
           {label}
         </span>
       </div>
+
+      {/* Bottom handle (source) - hidden for Deployment */}
+      {!hideBottomHandle && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          style={{
+            background: color,
+            width: 8,
+            height: 8,
+            border: 'none',
+            bottom: -4,
+          }}
+        />
+      )}
     </div>
   );
 }

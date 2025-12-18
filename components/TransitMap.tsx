@@ -33,6 +33,37 @@ function project(lon: number, lat: number, center: { lat: number; lon: number })
   return [x, y];
 }
 
+// Check if point is within radius (in meters, converted to projected units)
+function isWithinRadius(x: number, y: number, radius: number): boolean {
+  return Math.sqrt(x * x + y * y) <= radius;
+}
+
+// Clip a road segment to circular boundary
+function clipRoadToCircle(path: [number, number][], radius: number): [number, number][][] {
+  const segments: [number, number][][] = [];
+  let currentSegment: [number, number][] = [];
+
+  for (let i = 0; i < path.length; i++) {
+    const [x, y] = path[i];
+    const inside = isWithinRadius(x, y, radius);
+
+    if (inside) {
+      currentSegment.push([x, y]);
+    } else {
+      if (currentSegment.length >= 2) {
+        segments.push(currentSegment);
+      }
+      currentSegment = [];
+    }
+  }
+
+  if (currentSegment.length >= 2) {
+    segments.push(currentSegment);
+  }
+
+  return segments;
+}
+
 // Load roads for a city
 async function fetchRoads(config: CityConfig) {
   const response = await fetch(config.roadsDataPath);
@@ -41,6 +72,7 @@ async function fetchRoads(config: CityConfig) {
 
   const nodes: Record<number, { lon: number; lat: number }> = {};
   const roads: [number, number][][] = [];
+  const clipRadius = config.clipRadius;
 
   for (const el of data.elements) {
     if (el.type === 'node') nodes[el.id] = { lon: el.lon, lat: el.lat };
@@ -54,7 +86,16 @@ async function fetchRoads(config: CityConfig) {
       .map((id: number) => nodes[id])
       .filter(Boolean)
       .map((n: { lon: number; lat: number }) => project(n.lon, n.lat, config.center));
-    if (path.length >= 2) roads.push(path);
+
+    if (path.length >= 2) {
+      // Apply radial clip if configured
+      if (clipRadius) {
+        const clippedSegments = clipRoadToCircle(path, clipRadius);
+        roads.push(...clippedSegments);
+      } else {
+        roads.push(path);
+      }
+    }
   }
 
   return roads;
@@ -64,7 +105,42 @@ async function fetchRoads(config: CityConfig) {
 async function fetchTransitStops(config: CityConfig): Promise<TransitStop[]> {
   const response = await fetch(config.transitDataPath);
   if (!response.ok) return [];
-  return response.json();
+  const stops: TransitStop[] = await response.json();
+
+  // Apply radial clip if configured
+  if (config.clipRadius) {
+    return stops.filter(stop => {
+      const [x, y] = project(stop.lon, stop.lat, config.center);
+      return isWithinRadius(x, y, config.clipRadius!);
+    });
+  }
+
+  return stops;
+}
+
+// Visual boundary circle
+function BoundaryCircle({ radius, color = '#ffffff' }: { radius: number; color?: string }) {
+  const segments = 128;
+  const points: [number, number, number][] = [];
+
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    points.push([
+      Math.cos(angle) * radius,
+      Math.sin(angle) * radius,
+      0,
+    ]);
+  }
+
+  return (
+    <Line
+      points={points}
+      color={color}
+      lineWidth={1.5}
+      opacity={0.15}
+      transparent
+    />
+  );
 }
 
 // Reference roads layer
@@ -418,7 +494,17 @@ export default function TransitMap({ className }: TransitMapProps) {
   }, [stops]);
 
   return (
-    <div className={className} style={{ position: 'relative', width: '100%', height: '100%', background: 'transparent', overflow: 'hidden' }}>
+    <div
+      className={className}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        background: 'transparent',
+        overflow: 'hidden',
+        clipPath: city.clipRadius ? 'circle(50% at center)' : undefined,
+      }}
+    >
       <Canvas
         orthographic
         camera={{ zoom: city.zoom, position: [0, 0, 2000], near: 0.1, far: 5000 }}
@@ -426,6 +512,7 @@ export default function TransitMap({ className }: TransitMapProps) {
       >
         <CameraSetup baseZoom={city.zoom} />
         <group rotation={[0, 0, city.rotation]}>
+          {city.clipRadius && <BoundaryCircle radius={city.clipRadius} />}
           <RoadsLayer roads={roads} />
           {!loading && <TransitLayer stops={stops} maxTrips={maxTrips} center={city.center} />}
         </group>

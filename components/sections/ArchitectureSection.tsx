@@ -29,9 +29,9 @@ function ArchitectureFlow() {
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
-      defaultViewport={{ x: 80, y: 120, zoom: 1.0 }}
-      minZoom={1.0}
-      maxZoom={1.0}
+      defaultViewport={{ x: 320, y: 80, zoom: 0.85 }}
+      minZoom={0.85}
+      maxZoom={0.85}
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}

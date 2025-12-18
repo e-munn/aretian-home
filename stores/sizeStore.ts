@@ -16,9 +16,9 @@ export const SIZE_RADII: Record<SizeMode, number> = {
 
 // Zoom levels for each size mode
 export const SIZE_ZOOMS: Record<SizeMode, number> = {
-  small: 2.4,   // Very zoomed in
-  medium: 1.4,  // Medium zoom
-  large: 0.8,   // Full view
+  small: 2.0,   // Zoomed in
+  medium: 1.2,  // Medium zoom
+  large: 0.7,   // Full view (zoomed out a bit)
 };
 
 // Grid extents for each size mode (slightly larger than radius)
@@ -29,6 +29,6 @@ export const SIZE_EXTENTS: Record<SizeMode, number> = {
 };
 
 export const useSizeStore = create<SizeState>((set) => ({
-  mode: 'large',
+  mode: 'medium', // Default to medium (large disabled for performance)
   setMode: (mode) => set({ mode }),
 }));

@@ -10,6 +10,7 @@ export interface CityConfig {
   roadTypes: string[]; // highway types to show
   transitDataPath: string;
   roadsDataPath: string;
+  clipRadius?: number; // meters - optional radial clip
 }
 
 export const CITIES: Record<string, CityConfig> = {
@@ -28,12 +29,13 @@ export const CITIES: Record<string, CityConfig> = {
     id: 'boston',
     name: 'Boston',
     country: 'USA',
-    center: { lat: 42.355, lon: -71.065 },
-    zoom: 0.22,
-    rotation: 0, // north-south aligned
+    center: { lat: 42.365, lon: -71.09 }, // Centered for radial data
+    zoom: 0.12,
+    rotation: 0,
     roadTypes: ['primary', 'secondary', 'tertiary', 'residential'],
-    transitDataPath: '/data/boston/transit-stops.json',
-    roadsDataPath: '/data/boston/roads.json',
+    transitDataPath: '/data/boston/transit-stops-radial.json',
+    roadsDataPath: '/data/boston/roads-radial.json',
+    clipRadius: 4500, // meters - match data radius
   },
 };
 

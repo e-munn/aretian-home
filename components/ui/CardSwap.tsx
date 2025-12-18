@@ -53,7 +53,7 @@ interface CardSwapProps {
   pauseOnHover?: boolean;
   onCardClick?: (index: number) => void;
   skewAmount?: number;
-  easing?: 'elastic' | 'smooth';
+  easing?: 'elastic' | 'linear';
   children: ReactNode;
 }
 
@@ -80,12 +80,12 @@ const CardSwap = ({
           returnDelay: 0.05
         }
       : {
-          ease: 'power1.inOut',
-          durDrop: 0.8,
-          durMove: 0.8,
-          durReturn: 0.8,
-          promoteOverlap: 0.45,
-          returnDelay: 0.2
+          ease: 'none',
+          durDrop: 0.6,
+          durMove: 0.6,
+          durReturn: 0.6,
+          promoteOverlap: 0.5,
+          returnDelay: 0.1
         };
 
   const childArr = useMemo(() => Children.toArray(children), [children]);
@@ -137,6 +137,7 @@ const CardSwap = ({
             x: slot.x,
             y: slot.y,
             z: slot.z,
+            skewY: skewAmount,
             duration: config.durMove,
             ease: config.ease
           },
@@ -159,6 +160,7 @@ const CardSwap = ({
           x: backSlot.x,
           y: backSlot.y,
           z: backSlot.z,
+          skewY: skewAmount,
           duration: config.durReturn,
           ease: config.ease
         },

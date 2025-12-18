@@ -16,13 +16,19 @@ export const COLORS = {
 // Shared animation config
 const DROP_HEIGHT = 80;
 const ANIMATION_DURATION = 0.6; // seconds
-const STAGGER_DELAY = 0.002; // seconds between each marker
+const STAGGER_DELAY = 0.003; // seconds between each marker
 
 // Ease out back for bounce effect
 function easeOutBack(t: number): number {
   const c1 = 1.70158;
   const c3 = c1 + 1;
   return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
+// Seeded random for consistent per-marker randomness
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
 }
 
 // ============ BUS STOP MARKERS ============
@@ -46,11 +52,11 @@ export function BusStopMarkers({
   const startTime = useRef<number | null>(null);
   const animationComplete = useRef(false);
 
-  // Sort positions by distance from center for radial stagger effect
+  // Sort positions by distance from center for radial stagger effect (perimeter first, inward)
   const sortedIndices = useMemo(() => {
     return positions
       .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
-      .sort((a, b) => a.dist - b.dist)
+      .sort((a, b) => b.dist - a.dist)
       .map((item) => item.i);
   }, [positions]);
 
@@ -72,7 +78,9 @@ export function BusStopMarkers({
     positions.forEach((pos, i) => {
       // Get stagger order from sorted indices
       const staggerOrder = sortedIndices.indexOf(i);
-      const delay = staggerOrder * STAGGER_DELAY;
+      // Add small random offset to break up clustering
+      const randomOffset = seededRandom(i * 13) * 0.015;
+      const delay = staggerOrder * STAGGER_DELAY + randomOffset;
       const localTime = Math.max(0, elapsed - delay);
       const progress = Math.min(1, localTime / ANIMATION_DURATION);
       const eased = easeOutBack(progress);
@@ -142,11 +150,11 @@ export function BicingMarkers({
   const startTime = useRef<number | null>(null);
   const animationComplete = useRef(false);
 
-  // Sort positions by distance from center for radial stagger effect
+  // Sort positions by distance from center for radial stagger effect (perimeter first, inward)
   const sortedIndices = useMemo(() => {
     return positions
       .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
-      .sort((a, b) => a.dist - b.dist)
+      .sort((a, b) => b.dist - a.dist)
       .map((item) => item.i);
   }, [positions]);
 
@@ -165,7 +173,9 @@ export function BicingMarkers({
 
     positions.forEach((pos, i) => {
       const staggerOrder = sortedIndices.indexOf(i);
-      const delay = staggerOrder * STAGGER_DELAY;
+      // Add small random offset to break up clustering
+      const randomOffset = seededRandom(i * 11) * 0.015;
+      const delay = staggerOrder * STAGGER_DELAY + randomOffset;
       const localTime = Math.max(0, elapsed - delay);
       const progress = Math.min(1, localTime / ANIMATION_DURATION);
       const eased = easeOutBack(progress);
@@ -244,11 +254,11 @@ export function TrafficViolationMarkers({
     return new THREE.ShapeGeometry(shape);
   }, []);
 
-  // Sort positions by distance from center for radial stagger effect
+  // Sort positions by distance from center for radial stagger effect (perimeter first, inward)
   const sortedIndices = useMemo(() => {
     return positions
       .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
-      .sort((a, b) => a.dist - b.dist)
+      .sort((a, b) => b.dist - a.dist)
       .map((item) => item.i);
   }, [positions]);
 
@@ -267,7 +277,9 @@ export function TrafficViolationMarkers({
 
     positions.forEach((pos, i) => {
       const staggerOrder = sortedIndices.indexOf(i);
-      const delay = staggerOrder * STAGGER_DELAY;
+      // Add small random offset to break up clustering
+      const randomOffset = seededRandom(i * 17) * 0.015;
+      const delay = staggerOrder * STAGGER_DELAY + randomOffset;
       const localTime = Math.max(0, elapsed - delay);
       const progress = Math.min(1, localTime / ANIMATION_DURATION);
       const eased = easeOutBack(progress);
@@ -333,11 +345,11 @@ export function ParkingMarkers({
 
   const poleHeight = 28;
 
-  // Sort positions by distance from center for radial stagger effect
+  // Sort positions by distance from center for radial stagger effect (perimeter first, inward)
   const sortedIndices = useMemo(() => {
     return startPositions
       .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
-      .sort((a, b) => a.dist - b.dist)
+      .sort((a, b) => b.dist - a.dist)
       .map((item) => item.i);
   }, [startPositions]);
 
@@ -426,11 +438,11 @@ export function TreeMarkers({
   const trunkHeight = 12;
   const canopyRadius = 5;
 
-  // Sort positions by distance from center for radial stagger effect
+  // Sort positions by distance from center for radial stagger effect (perimeter first, inward)
   const sortedIndices = useMemo(() => {
     return positions
       .map((pos, i) => ({ i, dist: Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1]) }))
-      .sort((a, b) => a.dist - b.dist)
+      .sort((a, b) => b.dist - a.dist)
       .map((item) => item.i);
   }, [positions]);
 

@@ -1,44 +1,172 @@
 'use client';
 
-import { LogoMarquee } from '@/components/ui/LogoMarquee';
+import { motion } from 'framer-motion';
+import { MoreHorizontal } from 'lucide-react';
 import { Visible } from '@/components/layout/Visible';
+import { GradualBlur } from '@/components/ui/GradualBlur';
+import { LogoMarquee } from '@/components/ui/LogoMarquee';
 
 interface TeamMember {
   name: string;
   role: string;
   bio: string;
   location?: string;
+  color: string;
+  initials: string;
 }
 
-const teamMembers: TeamMember[] = [
+const TEAM: TeamMember[] = [
   {
     name: 'Ramon Gras Alomà',
     role: 'Co-Founder & CEO',
-    bio: 'City Science and Urban Design Researcher at Harvard University. Combines leading City Science research with building Aretian.',
-    location: 'Barcelona / Boston',
+    bio: 'City Science researcher at Harvard. Combines cutting-edge research with building Aretian to help cities unlock their potential.',
+    color: '#00C217',
+    initials: 'RG',
   },
   {
-    name: 'Jeremy Burke',
-    role: 'Co-Founder',
-    bio: 'Harvard Master in Design Engineering graduate. Uses data analytics and machine learning to give planners insights into how cities work.',
-    location: 'Boston',
+    name: 'Gauthier de La Ville-Baugé',
+    role: 'Director of Operations',
+    bio: 'Leads project management and operations, ensuring seamless delivery of urban analytics solutions.',
+    color: '#3b82f6',
+    initials: 'GV',
+  },
+  {
+    name: 'Fanny Magini',
+    role: 'Director of Business Development',
+    bio: 'Drives strategic partnerships and business growth, connecting Aretian with cities and organizations worldwide.',
+    color: '#8b5cf6',
+    initials: 'FM',
   },
   {
     name: 'Fernando Yu',
-    role: 'Lead Economist',
-    bio: 'Leadership team member focusing on economic analysis and urban development strategy.',
-  },
-  {
-    name: 'Gauthier de La Ville de Baugé',
-    role: 'Business Development & Operations',
-    bio: 'Handles Project Management, Business Development, Communication and Marketing. IE University graduate with focus on International Relations and AI.',
+    role: 'Economist',
+    bio: 'Economic analysis and urban development strategy. Focuses on the intersection of spatial design and economic performance.',
+    color: '#f59e0b',
+    initials: 'FY',
   },
   {
     name: 'Céleste Richard',
-    role: 'Senior Urban Designer',
-    bio: 'Leads urban design initiatives and spatial analysis projects.',
+    role: 'Project Manager',
+    bio: 'Coordinates urban design initiatives and ensures projects deliver actionable insights for cities.',
+    color: '#ec4899',
+    initials: 'CR',
+  },
+  {
+    name: 'Elijah Munn',
+    role: 'Senior Product Developer',
+    bio: 'Builds innovative digital tools and platforms that power Aretian\'s urban analytics solutions.',
+    color: '#14b8a6',
+    initials: 'EM',
+  },
+  {
+    name: 'Pablo Rocabert',
+    role: 'Urban Designer',
+    bio: 'Creates spatial designs and visualizations that translate complex urban data into clear, actionable plans.',
+    color: '#f97316',
+    initials: 'PR',
+  },
+  {
+    name: 'Nikhil Desai',
+    role: 'Senior Data Scientist',
+    bio: 'Develops advanced analytics and machine learning models to uncover patterns in urban systems.',
+    color: '#6366f1',
+    initials: 'ND',
+  },
+  {
+    name: 'Bernat Salvanyà-Rovira',
+    role: 'PhD & Researcher',
+    bio: 'Conducts cutting-edge research in urban science and complexity, advancing the theoretical foundations of urban analytics.',
+    color: '#ef4444',
+    initials: 'BS',
   },
 ];
+
+// List View - Minimal horizontal layout
+function ListView({ members }: { members: TeamMember[] }) {
+  return (
+    <div className="relative h-full overflow-hidden">
+      {/* Scrollable content */}
+      <div
+        className="h-full px-8 pt-8 pb-16 overflow-y-auto scrollbar-hide relative z-0"
+        style={{ overscrollBehavior: 'contain' }}
+        data-scrollable
+      >
+        <div className="max-w-7xl mx-auto">
+          {members.map((member, i) => (
+            <div key={member.name}>
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 30 }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                className="flex items-start gap-6 py-5 group hover:bg-white/5 px-4 -mx-4 rounded-lg transition-colors"
+              >
+              {/* Avatar - fixed width */}
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                style={{ background: `${member.color}30` }}
+              >
+                {member.initials}
+              </div>
+
+              {/* Name - fixed width */}
+              <div className="w-72 shrink-0">
+                <h3
+                  className="text-white text-lg md:text-xl uppercase tracking-wide leading-tight"
+                  style={{ fontFamily: 'var(--font-bebas-neue)' }}
+                >
+                  {member.name}
+                </h3>
+              </div>
+
+              {/* Role - fixed width */}
+              <div className="w-48 shrink-0">
+                <span className="text-white/50 text-sm">
+                  {member.role}
+                </span>
+              </div>
+
+              {/* Bio - icon with tooltip */}
+              <div className="relative shrink-0 ml-auto">
+                <div className="peer p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors">
+                  <MoreHorizontal className="w-5 h-5 text-white/40 group-hover:text-white/60" />
+                </div>
+                <div
+                  className="absolute right-0 top-full mt-2 w-72 p-4 rounded-xl bg-[#1a1a2e]/95 backdrop-blur-sm border border-white/10 shadow-xl opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all duration-200 z-50"
+                >
+                  <p className="text-white/80 text-sm leading-relaxed">{member.bio}</p>
+                  <div className="absolute -top-2 right-4 w-4 h-4 bg-[#1a1a2e]/95 border-l border-t border-white/10 rotate-45" />
+                </div>
+              </div>
+              </motion.div>
+              {/* Separator line */}
+              <div className="h-px bg-white/10 mx-4" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <GradualBlur
+        position="top"
+        height="6rem"
+        strength={2}
+        divCount={5}
+        curve="bezier"
+        exponential={true}
+        opacity={1}
+      />
+      <GradualBlur
+        position="bottom"
+        height="6rem"
+        strength={2}
+        divCount={5}
+        curve="bezier"
+        exponential={true}
+        opacity={1}
+      />
+    </div>
+  );
+}
 
 export function TeamSection() {
   return (
@@ -52,45 +180,19 @@ export function TeamSection() {
       }}
     >
       <Visible>
-        <div className="w-full h-full bg-transparent flex items-start justify-center p-8 md:p-16 overflow-y-auto">
-          <div className="max-w-5xl w-full pb-16">
-            <h2 className="text-3xl md:text-4xl font-medium text-white mb-2 font-google">Our Team</h2>
-            <p className="text-white/50 mb-10 font-google">
-              Harvard-based researchers and practitioners in urban science
-            </p>
+        <div className="w-full h-full flex flex-col">
+          {/* Team list - 68vh, aligned to top */}
+          <div style={{ height: '68vh' }}>
+            <ListView members={TEAM} />
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamMembers.map((member) => (
-                <div
-                  key={member.name}
-                  className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#424162] to-[#2a2a4a] mb-4 flex items-center justify-center text-white/70 text-lg font-medium">
-                    {member.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <h3 className="text-white font-medium text-lg font-google">{member.name}</h3>
-                  <p className="text-[#00C217] text-sm mb-2 font-google">{member.role}</p>
-                  {member.location && (
-                    <p className="text-white/30 text-xs mb-2 font-google">{member.location}</p>
-                  )}
-                  <p className="text-white/50 text-sm leading-relaxed font-google">{member.bio}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 text-center">
-              <p className="text-white/30 text-sm font-google">
-                Founded 2018 at Harvard School of Engineering and Applied Sciences
+          {/* Partners section - bottom */}
+          <div className="flex-1 flex flex-col justify-end pb-8 px-8">
+            <div className="max-w-5xl mx-auto w-full">
+              <p className="text-white/30 text-xs mb-4 text-center uppercase tracking-widest">
+                Partners & Clients
               </p>
-            </div>
-
-            {/* Partners & Clients - prominent section */}
-            <div className="mt-16 pt-8 border-t border-white/10">
-              <h3 className="text-2xl md:text-3xl font-medium text-white mb-3 font-google">Partners & Clients</h3>
-              <p className="text-white/40 text-sm mb-8 font-google">
-                Organizations we've worked with
-              </p>
-              <LogoMarquee velocity={25} logoSize={90} rows={2} />
+              <LogoMarquee velocity={25} logoSize={60} rows={1} />
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { Cursor, useCursorState } from "motion-plus/react";
 import { animate, motion, useMotionValue } from "motion/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCursorContext } from "./CursorProvider";
 
 function Corner({
@@ -49,11 +49,25 @@ export default function CustomCursor() {
   const state = useCursorState();
   const rotate = useMotionValue(0);
   const { hideCursor, darkMode, nearNavbar } = useCursorContext();
+  const [overCursorTarget, setOverCursorTarget] = useState(false);
 
-  const cursorColor = darkMode ? "#ffffff" : "var(--foreground)";
+  const cursorColor = darkMode ? "#ffffff" : "#0f0f1a";
+
+  // Track when cursor is over elements with data-cursor-corners attribute
+  useEffect(() => {
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('[data-cursor-corners]');
+      setOverCursorTarget(!!target);
+    };
+
+    document.addEventListener('mouseover', handleMouseOver);
+    return () => document.removeEventListener('mouseover', handleMouseOver);
+  }, []);
+
+  const showCorners = nearNavbar || overCursorTarget;
 
   useEffect(() => {
-    if (!state.targetBoundingBox && nearNavbar) {
+    if (!state.targetBoundingBox && showCorners) {
       animate(rotate, [rotate.get(), rotate.get() + 360], {
         duration: 3,
         ease: "linear",
@@ -65,7 +79,7 @@ export default function CustomCursor() {
         bounce: 0.3,
       });
     }
-  }, [state.targetBoundingBox, rotate, nearNavbar]);
+  }, [state.targetBoundingBox, rotate, showCorners]);
 
   if (hideCursor) return null;
 
@@ -78,8 +92,8 @@ export default function CustomCursor() {
         className="pointer-events-none"
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
-      {/* Rotating corners - only near navbar */}
-      {nearNavbar && (
+      {/* Rotating corners - near navbar or over cursor target elements */}
+      {showCorners && (
         <Cursor
           magnetic={{ snap: 0.9, morph: true }}
           style={{ rotate, width: 40, height: 40, backgroundColor: "transparent" }}

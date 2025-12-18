@@ -34,8 +34,8 @@ const sections: NavSection[] = [
     description: 'Design system and visual language. Consistent patterns for data visualization across urban contexts.'
   },
   {
-    id: 'projects',
-    label: 'Projects',
+    id: 'work',
+    label: 'Work',
     description: 'Selected case studies and implementations. Urban planning tools deployed across multiple cities.'
   },
   {

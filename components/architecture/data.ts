@@ -16,14 +16,14 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'group-collection',
     type: 'group',
-    position: { x: 100, y: 0 },
-    data: { label: 'Collection', color: COLORS.collection },
-    style: { width: 680, height: 180, border: `1px solid ${COLORS.collection}30`, borderRadius: '24px', backgroundColor: 'transparent' },
+    position: { x: 60, y: 0 },
+    data: { label: 'Collection', color: COLORS.collection, hideTopHandle: true },
+    style: { width: 780, height: 220, border: `1px solid ${COLORS.collection}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'urban-data',
     type: 'service',
-    position: { x: 40, y: 65 },
+    position: { x: 50, y: 80 },
     data: { label: 'Urban Data', description: 'City infrastructure', icon: 'map', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -31,7 +31,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'spatial-feeds',
     type: 'service',
-    position: { x: 250, y: 65 },
+    position: { x: 290, y: 80 },
     data: { label: 'Spatial Feeds', description: 'GIS & satellite', icon: 'globe', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -39,7 +39,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'mobility-data',
     type: 'service',
-    position: { x: 460, y: 65 },
+    position: { x: 530, y: 80 },
     data: { label: 'Mobility', description: 'Transit & flows', icon: 'layers', color: COLORS.collection },
     parentId: 'group-collection',
     extent: 'parent',
@@ -49,14 +49,14 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'group-analysis',
     type: 'group',
-    position: { x: 100, y: 280 },
+    position: { x: 60, y: 320 },
     data: { label: 'Analysis', color: COLORS.analysis },
-    style: { width: 680, height: 180, border: `1px solid ${COLORS.analysis}30`, borderRadius: '24px', backgroundColor: 'transparent' },
+    style: { width: 780, height: 220, border: `1px solid ${COLORS.analysis}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'pattern-detection',
     type: 'service',
-    position: { x: 40, y: 65 },
+    position: { x: 50, y: 80 },
     data: { label: 'Patterns', description: 'Network analysis', icon: 'chart', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -64,7 +64,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'simulation',
     type: 'service',
-    position: { x: 250, y: 65 },
+    position: { x: 290, y: 80 },
     data: { label: 'Simulation', description: 'Urban models', icon: 'brain', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -72,7 +72,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'optimization',
     type: 'service',
-    position: { x: 460, y: 65 },
+    position: { x: 530, y: 80 },
     data: { label: 'Optimization', description: 'Resource allocation', icon: 'server', color: COLORS.analysis },
     parentId: 'group-analysis',
     extent: 'parent',
@@ -82,14 +82,14 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'group-deployment',
     type: 'group',
-    position: { x: 100, y: 560 },
-    data: { label: 'Deployment', color: COLORS.deployment },
-    style: { width: 680, height: 180, border: `1px solid ${COLORS.deployment}30`, borderRadius: '24px', backgroundColor: 'transparent' },
+    position: { x: 60, y: 640 },
+    data: { label: 'Deployment', color: COLORS.deployment, hideBottomHandle: true },
+    style: { width: 780, height: 220, border: `1px solid ${COLORS.deployment}30`, borderRadius: '24px', backgroundColor: 'transparent' },
   },
   {
     id: 'digital-twin',
     type: 'service',
-    position: { x: 40, y: 65 },
+    position: { x: 50, y: 80 },
     data: { label: 'Digital Twin', description: '3D city models', icon: 'box', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
@@ -97,7 +97,7 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'dashboards',
     type: 'service',
-    position: { x: 250, y: 65 },
+    position: { x: 290, y: 80 },
     data: { label: 'Dashboards', description: 'KPI tracking', icon: 'chart', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
@@ -105,75 +105,32 @@ const nodes: Node<ServiceNodeData | GroupNodeData>[] = [
   {
     id: 'recommendations',
     type: 'service',
-    position: { x: 460, y: 65 },
+    position: { x: 530, y: 80 },
     data: { label: 'Insights', description: 'Action plans', icon: 'layers', color: COLORS.deployment },
     parentId: 'group-deployment',
     extent: 'parent',
   },
 ];
 
-// Edges - Top-down flow
+// Edges - Simple group-to-group flow with dashed animated lines
 const edges: Edge[] = [
-  // Collection to Analysis (vertical flow)
+  // Collection -> Analysis
   {
-    id: 'e-urban-patterns',
-    source: 'urban-data',
-    target: 'pattern-detection',
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
-  },
-  {
-    id: 'e-spatial-simulation',
-    source: 'spatial-feeds',
-    target: 'simulation',
+    id: 'e-collection-analysis',
+    source: 'group-collection',
+    target: 'group-analysis',
     animated: true,
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    style: { stroke: COLORS.flow, strokeWidth: 2, strokeDasharray: '8 4' },
     markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
   },
+  // Analysis -> Deployment
   {
-    id: 'e-mobility-optimization',
-    source: 'mobility-data',
-    target: 'optimization',
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
-  },
-
-  // Analysis to Deployment (vertical flow)
-  {
-    id: 'e-patterns-twin',
-    source: 'pattern-detection',
-    target: 'digital-twin',
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
-  },
-  {
-    id: 'e-simulation-dashboards',
-    source: 'simulation',
-    target: 'dashboards',
+    id: 'e-analysis-deployment',
+    source: 'group-analysis',
+    target: 'group-deployment',
     animated: true,
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
+    style: { stroke: COLORS.flow, strokeWidth: 2, strokeDasharray: '8 4' },
     markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
-  },
-  {
-    id: 'e-optimization-insights',
-    source: 'optimization',
-    target: 'recommendations',
-    style: { stroke: COLORS.flow, strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: COLORS.flow },
-  },
-
-  // Cross-connections within groups (subtle)
-  {
-    id: 'e-patterns-simulation',
-    source: 'pattern-detection',
-    target: 'simulation',
-    style: { stroke: COLORS.analysis, strokeWidth: 1, strokeDasharray: '4 4' },
-  },
-  {
-    id: 'e-simulation-optimization',
-    source: 'simulation',
-    target: 'optimization',
-    style: { stroke: COLORS.analysis, strokeWidth: 1, strokeDasharray: '4 4' },
   },
 ];
 

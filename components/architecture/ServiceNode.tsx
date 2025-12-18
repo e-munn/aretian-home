@@ -45,17 +45,30 @@ function ServiceNodeComponent({ data }: NodeProps) {
           boxShadow: disabled ? 'none' : `0 0 20px ${color}33`,
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {Icon && (
             <Icon
-              size={18}
+              size={22}
               style={{ color: disabled ? '#666' : color }}
             />
           )}
-          <span className="text-sm font-medium text-white">{label}</span>
+          <span
+            className="text-white uppercase"
+            style={{
+              fontSize: '18px',
+              fontFamily: 'var(--font-bebas-neue), sans-serif',
+              letterSpacing: '2px',
+            }}
+          >
+            {label}
+          </span>
         </div>
         {description && (
-          <p className="text-xs text-white/50 mt-1">{description}</p>
+          <p
+            className="text-white/50 mt-1 text-xs"
+          >
+            {description}
+          </p>
         )}
       </div>
       <Handle type="source" position={Position.Bottom} className="opacity-0" />

@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useMemo, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import uniqBy from 'lodash/uniqBy'
 
 // City components
 import { DotGrid, GRID_ANGLE, GRID_EXTENTS } from './city/Grid'
@@ -14,22 +15,20 @@ import { BusStopMarkers, BicingMarkers, TrafficViolationMarkers } from './city/M
 import { FadeInLayer } from './city/LayerAnimations'
 import { useCityData, CityData } from '@/hooks/useCityData'
 import { useLayerStore, LayerKey } from '@/stores/layerStore'
-import { usePaletteStore, PALETTES } from '@/stores/paletteStore'
+import { usePaletteStore } from '@/stores/paletteStore'
 import { SIZE_ZOOMS, SIZE_RADII, SizeMode } from '@/stores/sizeStore'
 import { filterPointsByRadius, filterRoadsByRadius, isWithinRadius } from './city/data'
 
 // Screen width breakpoints for size mode
 const SIZE_BREAKPOINTS = {
   small: 900,   // < 900px = small
-  medium: 1400, // 900-1400px = medium
-  // > 1400px = large
+  // >= 900px = medium (large disabled for performance)
 }
 
-// Determine size mode from screen width
+// Determine size mode from screen width (large disabled)
 function getSizeModeFromWidth(width: number): SizeMode {
   if (width < SIZE_BREAKPOINTS.small) return 'small'
-  if (width < SIZE_BREAKPOINTS.medium) return 'medium'
-  return 'large'
+  return 'medium' // Use medium for all larger screens
 }
 
 // Scene
@@ -64,43 +63,35 @@ function Scene({
   const orbitAngle = Math.PI / 4
   const elevation = Math.atan(1 / Math.sqrt(2))
 
-  // Grid always extends full screen
-  const gridExtent = GRID_EXTENTS.large
+  // Grid extent based on size mode (medium max since large is disabled)
+  const gridExtent = GRID_EXTENTS[sizeMode]
 
   // Calculate responsive offset and zoom based on viewport and size mode
   useEffect(() => {
     const aspect = size.width / size.height
     const orthoCamera = camera as THREE.OrthographicCamera
 
-    // Base zoom from size mode, scaled by viewport
+    // Zoom based on size mode
     const sizeZoom = SIZE_ZOOMS[sizeMode]
     const viewportScale = Math.min(size.width / 1920, size.height / 1080)
-    orthoCamera.zoom = Math.max(0.4, Math.min(3.0, sizeZoom * viewportScale * 1.1))
+    orthoCamera.zoom = Math.max(0.5, Math.min(3.0, sizeZoom * viewportScale * 1.1))
 
-    // Offset based on size mode for proper centering
+    // Shift scene to the right for navbar visibility
     let offsetX: number
     let offsetY: number
 
-    if (sizeMode === 'small') {
-      // Small: center the data more
-      offsetX = 180
-      offsetY = -80
-    } else if (sizeMode === 'medium') {
-      // Medium: slightly off-center
-      offsetX = 200
-      offsetY = -100
+    if (aspect > 1.4) {
+      // Wide screen - push scene to the right
+      offsetX = 140 + (aspect - 1.4) * 60
+      offsetY = -150
+    } else if (aspect > 1) {
+      // Medium width
+      offsetX = 70 + (aspect - 1) * 80
+      offsetY = -110
     } else {
-      // Large: push scene to the right for navbar visibility
-      if (aspect > 1.4) {
-        offsetX = 250 + (aspect - 1.4) * 50
-        offsetY = -150
-      } else if (aspect > 1) {
-        offsetX = 150 + (aspect - 1) * 100
-        offsetY = -100
-      } else {
-        offsetX = 50
-        offsetY = 0
-      }
+      // Narrow (mobile) - center more
+      offsetX = 10
+      offsetY = -30
     }
 
     camera.position.set(
@@ -151,7 +142,10 @@ function Scene({
         <BicingMarkers positions={bicingStations.map((s) => s.position)} opacity={getLayerOpacity('bicingStations')} />
       )}
       {revealed.trafficViolations && (
-        <TrafficViolationMarkers positions={trafficViolations.map((v) => v.position)} opacity={getLayerOpacity('trafficViolations')} />
+        <TrafficViolationMarkers
+          positions={uniqBy(trafficViolations, v => `${v.position[0]},${v.position[1]}`).map((v) => v.position)}
+          opacity={getLayerOpacity('trafficViolations')}
+        />
       )}
     </group>
   )
@@ -168,10 +162,10 @@ export default function CityScene() {
   const hoveredLayers = useLayerStore((state) => state.hoveredLayers)
 
   // Get palette from store
-  const { palette, currentIndex, next, prev } = usePaletteStore()
+  const { palette, next, prev } = usePaletteStore()
 
-  // Auto-determine size mode from screen width
-  const [sizeMode, setSizeMode] = useState<SizeMode>('large')
+  // Auto-determine size mode from screen width (medium default, large disabled)
+  const [sizeMode, setSizeMode] = useState<SizeMode>('medium')
 
   useEffect(() => {
     const updateSizeMode = () => {
@@ -206,9 +200,31 @@ export default function CityScene() {
   const getLayerOpacity = useCallback((layer: LayerKey): number => {
     // If nothing is hovered, everything is at full opacity
     if (hoveredLayers === null) return 1
-    // Otherwise, only hovered layers are at full opacity
-    return hoveredLayers.includes(layer) ? 1 : 0.15
+    // Hovered layers get a brightness boost, others dim
+    if (hoveredLayers.includes(layer)) {
+      // Boost trees and buildings more since they're visually subtle
+      if (layer === 'trees' || layer === 'buildings') return 1.5
+      return 1.2
+    }
+    return 0.15
   }, [hoveredLayers])
+
+  // Calculate building color - brighter and less saturated when hovered
+  const buildingColor = useMemo(() => {
+    if (hoveredLayers?.includes('buildings')) {
+      // Bright desaturated color for hover - light grayish blue
+      return '#8090a8'
+    }
+    return palette.building
+  }, [hoveredLayers, palette.building])
+
+  // Calculate building opacity - more transparent when hovered
+  const buildingOpacity = useMemo(() => {
+    if (hoveredLayers?.includes('buildings')) {
+      return 0.5
+    }
+    return palette.buildingOpacity
+  }, [hoveredLayers, palette.buildingOpacity])
 
   // Keyboard navigation: arrows for palette
   useEffect(() => {
@@ -244,8 +260,8 @@ export default function CityScene() {
             parkingZones={filteredData.parkingZones}
             bikeLanes={filteredData.bikeLanes}
             revealed={revealed}
-            buildingColor={palette.building}
-            buildingOpacity={palette.buildingOpacity}
+            buildingColor={buildingColor}
+            buildingOpacity={buildingOpacity}
             dotGridColor={palette.dotGrid}
             getLayerOpacity={getLayerOpacity}
             sizeMode={sizeMode}
@@ -253,33 +269,6 @@ export default function CityScene() {
         )}
       </Canvas>
 
-      {/* Palette indicator */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 24,
-          right: 24,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(8px)',
-          padding: '8px 16px',
-          borderRadius: 8,
-          color: 'white',
-          fontSize: 12,
-          fontFamily: 'monospace',
-        }}
-      >
-        <div style={{ display: 'flex', gap: 6 }}>
-          <div style={{ width: 16, height: 16, borderRadius: 4, background: palette.bg, border: '1px solid rgba(255,255,255,0.2)' }} />
-          <div style={{ width: 16, height: 16, borderRadius: 4, background: palette.building, border: '1px solid rgba(255,255,255,0.2)' }} />
-          <div style={{ width: 16, height: 16, borderRadius: 4, background: palette.dotGrid, border: '1px solid rgba(255,255,255,0.2)' }} />
-        </div>
-        <span style={{ opacity: 0.7 }}>{currentIndex + 1}/{PALETTES.length}</span>
-        {palette.name && <span style={{ opacity: 0.5 }}>{palette.name}</span>}
-      </div>
     </div>
   )
 }

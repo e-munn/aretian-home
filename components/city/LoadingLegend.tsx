@@ -2,7 +2,8 @@
 
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Route, TreePine, Database, Building2, Circle, Triangle, Car, LucideIcon, Bike } from 'lucide-react';
+import { Route, TreePine, Building2, Circle, Triangle, Car, LucideIcon, Bike, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useSectionContext } from '@/components/navigation/FullPageScroll';
 import { useLayerStore, LayerKey, REVEAL_SEQUENCE } from '@/stores/layerStore';
 import Magnet from '@/components/Magnet';
@@ -77,9 +78,6 @@ function CircularProgress({
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
-        style={{
-          transition: 'stroke-dashoffset 0.15s ease-out',
-        }}
       />
     </svg>
   );
@@ -135,16 +133,10 @@ function LoadingIcon({
 
   // Animate progress based on startTime from store
   useEffect(() => {
-    if (isRevealed) {
-      // Jump to 100% when revealed
-      setProgress(1);
-      setShowPulse(true);
-      return;
-    }
-
     // If this layer reveals immediately, show full progress
     if (revealDelay === 0) {
       setProgress(1);
+      if (isRevealed) setShowPulse(true);
       return;
     }
 
@@ -153,15 +145,21 @@ function LoadingIcon({
       return;
     }
 
-    // Animate progress from 0 to 100% based on elapsed time
+    // Animate progress from 0 to 100% linearly based on elapsed time
     let rafId: number;
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      // Progress reaches 100% exactly at revealDelay
+      // Progress reaches 100% exactly at revealDelay - linear interpolation
       const p = Math.min(1, elapsed / revealDelay);
       setProgress(p);
 
-      if (elapsed < revealDelay && !isRevealed) {
+      // Show pulse when we hit 100%
+      if (p >= 1 && !showPulse) {
+        setShowPulse(true);
+      }
+
+      // Keep animating until we reach 100%
+      if (p < 1) {
         rafId = requestAnimationFrame(animate);
       }
     };
@@ -169,7 +167,7 @@ function LoadingIcon({
     rafId = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(rafId);
-  }, [isRevealed, revealDelay, startTime]);
+  }, [revealDelay, startTime]);
 
   // Reset pulse after animation
   useEffect(() => {
@@ -190,163 +188,155 @@ function LoadingIcon({
     setHoveredLayers(null);
   }, [setHoveredLayers]);
 
+  const isActive = activeId === id;
+
   return (
-    <Magnet
-      padding={25}
-      magnetStrength={3}
-      disabled={isMagnetDisabled}
-      onActiveChange={handleMagnetChange}
-    >
-      <motion.div
-        className="relative flex items-center justify-center rounded-full cursor-pointer"
-        style={{
-          width: dimensions,
-          height: dimensions,
-          backgroundColor: `${color}20`,
-        }}
-        animate={{
-          opacity: isRevealed ? 1 : 0.5 + progress * 0.4,
-          scale: isRevealed ? 1 : 0.92 + progress * 0.08,
-        }}
-        transition={{ duration: 0.3 }}
-        whileHover={isRevealed ? { scale: 1.1 } : {}}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Circular progress (visible while loading) */}
-        {!isRevealed && progress > 0 && (
-          <CircularProgress
-            progress={progress}
-            size={dimensions}
-            strokeWidth={strokeWidth}
-            color={color}
-          />
-        )}
-
-        {/* Completed ring */}
-        {isRevealed && (
-          <CircularProgress
-            progress={1}
-            size={dimensions}
-            strokeWidth={strokeWidth}
-            color={color}
-          />
-        )}
-
-        {/* Pulse ring on completion */}
-        {showPulse && (
+    <div className="relative flex items-center">
+      {/* Label to the left of icon */}
+      <AnimatePresence>
+        {isActive && (
           <motion.div
-            className="absolute inset-0 rounded-full"
-            style={{ border: `${strokeWidth}px solid ${color}` }}
-            initial={{ scale: 1, opacity: 0.8 }}
-            animate={{ scale: 1.5, opacity: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-full mr-4 pr-2 flex items-center"
+          >
+            <TextType
+              text={label}
+              typingSpeed={25}
+              showCursor={true}
+              cursorCharacter="_"
+              loop={false}
+              className="font-mono text-xs !whitespace-nowrap"
+              style={{ color, whiteSpace: 'nowrap' }}
+            />
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Icon */}
-        <Icon size={iconSize} style={{ color }} />
-      </motion.div>
-    </Magnet>
+      <Magnet
+        padding={12}
+        magnetStrength={2}
+        disabled={isMagnetDisabled}
+        onActiveChange={handleMagnetChange}
+      >
+        <motion.div
+          className="relative flex items-center justify-center rounded-full cursor-pointer"
+          style={{
+            width: dimensions,
+            height: dimensions,
+            backgroundColor: `${color}20`,
+          }}
+          animate={{
+            opacity: isRevealed ? 1 : 0.5 + progress * 0.4,
+            scale: isRevealed ? 1 : 0.92 + progress * 0.08,
+          }}
+          transition={{ duration: 0.3 }}
+          whileHover={isRevealed ? { scale: 1.1 } : {}}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Circular progress (visible while loading) */}
+          {!isRevealed && progress > 0 && (
+            <CircularProgress
+              progress={progress}
+              size={dimensions}
+              strokeWidth={strokeWidth}
+              color={color}
+            />
+          )}
+
+          {/* Completed ring */}
+          {isRevealed && (
+            <CircularProgress
+              progress={1}
+              size={dimensions}
+              strokeWidth={strokeWidth}
+              color={color}
+            />
+          )}
+
+          {/* Pulse ring on completion */}
+          {showPulse && (
+            <motion.div
+              className="absolute inset-0 rounded-full"
+              style={{ border: `${strokeWidth}px solid ${color}` }}
+              initial={{ scale: 1, opacity: 0.8 }}
+              animate={{ scale: 1.5, opacity: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          )}
+
+          {/* Icon */}
+          <Icon size={iconSize} style={{ color }} />
+        </motion.div>
+      </Magnet>
+    </div>
   );
 }
 
-// Layer labels for display
-const LAYER_LABELS: Record<string, string> = {
-  roads: 'Roads & Grid',
-  trees: 'Urban Trees',
-  data: 'Infrastructure Data',
-  busStops: 'Bus Stops',
-  bicingStations: 'Bicing Stations',
-  trafficViolations: 'Traffic Violations',
-  flowParticles: 'Traffic Flow',
-  buildings: 'Buildings',
-};
-
-// Sub-icons for the Data group
+// Sub-icons for the Data group - colors with 70% opacity
 const DATA_SUB_ICONS: { id: string; icon: LucideIcon; color: string; label: string; layers: LayerKey[] }[] = [
-  { id: 'busStops', icon: Circle, color: '#3b82f6', label: 'Bus', layers: ['busStops'] },
-  { id: 'bicingStations', icon: Bike, color: '#ef4444', label: 'Bicing', layers: ['bicingStations'] },
-  { id: 'trafficViolations', icon: Triangle, color: '#facc15', label: 'Traffic', layers: ['trafficViolations'] },
-  { id: 'flowParticles', icon: Car, color: '#cc7000', label: 'Flow', layers: ['flowParticles'] },
+  { id: 'busStops', icon: Circle, color: 'rgba(59, 130, 246, 0.7)', label: 'Bus Stops', layers: ['busStops'] },
+  { id: 'bicingStations', icon: Bike, color: 'rgba(239, 68, 68, 0.7)', label: 'Bicing Stations', layers: ['bicingStations'] },
+  { id: 'trafficViolations', icon: Triangle, color: 'rgba(250, 204, 21, 0.7)', label: 'Traffic Violations', layers: ['trafficViolations'] },
+  { id: 'flowParticles', icon: Car, color: 'rgba(204, 112, 0, 0.7)', label: 'Traffic Flow', layers: ['flowParticles'] },
 ];
 
 export function LoadingLegend() {
   const { activeIndex } = useSectionContext();
   const isVisible = activeIndex === 0;
+  const router = useRouter();
 
   // Track which icon's magnet is active (for exclusive activation)
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Get the label for the active icon
-  const activeLabel = activeId ? LAYER_LABELS[activeId] || '' : '';
+
+  const handleExplore = () => {
+    router.push('/explore');
+  };
 
   return (
     <MagnetContext.Provider value={{ activeId, setActiveId }}>
       <AnimatePresence>
         {isVisible && (
-          <motion.div
-            className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Layer label - shows when an icon is magnetically active */}
-            <div className="h-6 flex items-center justify-end pr-2">
-              <AnimatePresence mode="wait">
-                {activeLabel && (
-                  <motion.div
-                    key={activeId}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-white/80 text-sm font-medium tracking-wide"
-                  >
-                    <TextType
-                      text={activeLabel}
-                      typingSpeed={20}
-                      showCursor={true}
-                      cursorCharacter="_"
-                      loop={false}
-                      className="font-mono"
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Icon row: evenly spaced [Roads] [Trees] [Data+subs] [Buildings] */}
-            <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm rounded-full px-8 py-3" style={{ minWidth: 420 }}>
-              {/* Roads */}
-              <LoadingIcon
-                id="roads"
-                icon={Route}
-                color="#8a9cc0"
-                label="Roads"
-                layers={['grid', 'roads']}
-              />
-
-              {/* Trees */}
-              <LoadingIcon
-                id="trees"
-                icon={TreePine}
-                color="#22c55e"
-                label="Trees"
-                layers={['trees']}
-              />
-
-              {/* Data group - pill wrapping main icon + sub-icons */}
-              <div className="flex items-center gap-3 bg-white/5 rounded-full pl-2 pr-3 py-1">
+          <>
+            {/* Vertical icon column - right side, vertically centered */}
+            <div className="fixed z-50 top-0 right-0 h-full flex flex-col justify-center pr-6">
+              <motion.div
+                className="flex flex-col items-center gap-3 bg-black/30 backdrop-blur-sm rounded-full px-3 py-6"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Roads */}
                 <LoadingIcon
-                  id="data"
-                  icon={Database}
-                  color="#f59e0b"
-                  label="Data"
-                  layers={['parking', 'bikeLanes', 'busStops', 'bicingStations', 'trafficViolations', 'flowParticles']}
+                  id="roads"
+                  icon={Route}
+                  color="rgba(138, 156, 192, 0.7)"
+                  label="Roads & Grid"
+                  layers={['grid', 'roads']}
                 />
-                <div className="flex items-center gap-2">
+
+                {/* Trees */}
+                <LoadingIcon
+                  id="trees"
+                  icon={TreePine}
+                  color="rgba(34, 197, 94, 0.7)"
+                  label="Urban Trees"
+                  layers={['trees']}
+                />
+
+                {/* Data group - encapsulated by orange ring */}
+                <div
+                  className="relative flex flex-col items-center gap-3 py-3 px-2 rounded-full"
+                  style={{
+                    border: '2px solid rgba(245, 158, 11, 0.4)',
+                    backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                  }}
+                >
                   {DATA_SUB_ICONS.map(({ id, icon, color, label, layers }) => (
                     <LoadingIcon
                       key={id}
@@ -359,18 +349,30 @@ export function LoadingLegend() {
                     />
                   ))}
                 </div>
-              </div>
 
-              {/* Buildings */}
-              <LoadingIcon
-                id="buildings"
-                icon={Building2}
-                color="#6366f1"
-                label="Buildings"
-                layers={['buildings']}
-              />
+                {/* Buildings */}
+                <LoadingIcon
+                  id="buildings"
+                  icon={Building2}
+                  color="rgba(99, 102, 241, 0.7)"
+                  label="3D Buildings"
+                  layers={['buildings']}
+                />
+
+                {/* Explore button - same size as icons */}
+                <motion.button
+                  onClick={handleExplore}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  title="Explore full city"
+                >
+                  <ArrowRight size={20} className="text-white/60" />
+                </motion.button>
+              </motion.div>
             </div>
-          </motion.div>
+
+          </>
         )}
       </AnimatePresence>
     </MagnetContext.Provider>
