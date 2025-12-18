@@ -110,23 +110,21 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                           className="hidden min-[840px]:inline items-center gap-4"
                           style={{ fontSize: 'clamp(2.5rem, 4vw, 5rem)', whiteSpace: 'nowrap', display: 'inline-flex' }}
                         >
-                          <span className="w-0.5 h-[72px] bg-current opacity-40 -mt-3" />
+                          <span className="w-0.5 h-[56px] bg-current opacity-40 -mt-1" />
                           <DecryptedText
-                            text="URBAN ANALYTICS"
+                            text="URBAN ANALYTICS & DESIGN"
                             animateOn="view"
                             characters=";:."
-                            speed={80}
+                            speed={60}
                             sequential={true}
                             revealDirection="start"
-                          />
-                          <span style={{ fontFamily: 'system-ui, sans-serif', fontWeight: 400, fontSize: '0.85em', position: 'relative', top: '-0.1em', margin: '0 -0.1em' }}>&</span>
-                          <DecryptedText
-                            text="DESIGN"
-                            animateOn="view"
-                            characters=";:."
-                            speed={80}
-                            sequential={true}
-                            revealDirection="start"
+                            charStyle={(char: string) => char === '&' ? {
+                              fontFamily: 'system-ui, sans-serif',
+                              fontSize: '0.85em',
+                              position: 'relative' as const,
+                              top: '-0.1em',
+                              margin: '0 0.15em',
+                            } : undefined}
                           />
                         </span>
                         {/* Mobile - two lines */}
@@ -135,7 +133,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                           style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)' }}
                         >
                           <span className="flex items-center gap-3">
-                            <span className="w-0.5 h-14 bg-current opacity-40 -mt-1" />
+                            <span className="w-0.5 h-10 bg-current opacity-40 -mt-1" />
                             <DecryptedText
                               text="URBAN ANALYTICS"
                               animateOn="view"
@@ -145,17 +143,21 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                               revealDirection="start"
                             />
                           </span>
-                          <span>
-                            <span style={{ fontFamily: 'system-ui, sans-serif', fontWeight: 400, fontSize: '0.85em', position: 'relative', top: '-0.1em', margin: '0 -0.05em' }}>&</span>
-                            <DecryptedText
-                              text="DESIGN"
-                              animateOn="view"
-                              characters=";:."
-                              speed={80}
-                              sequential={true}
-                              revealDirection="start"
-                            />
-                          </span>
+                          <DecryptedText
+                            text="& DESIGN"
+                            animateOn="view"
+                            characters=";:."
+                            speed={80}
+                            sequential={true}
+                            revealDirection="start"
+                            charStyle={(char: string) => char === '&' ? {
+                              fontFamily: 'system-ui, sans-serif',
+                              fontSize: '0.85em',
+                              position: 'relative' as const,
+                              top: '-0.1em',
+                              marginRight: '0.15em',
+                            } : undefined}
+                          />
                         </span>
                       </motion.div>
                     )}

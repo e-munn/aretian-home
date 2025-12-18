@@ -30,6 +30,7 @@ export default function DecryptedText({
   parentClassName = '',
   encryptedClassName = '',
   animateOn = 'hover',
+  charStyle = null, // Function: (char, index) => style object for custom per-character styling
   ...props
 }) {
   const [displayText, setDisplayText] = useState(text);
@@ -194,9 +195,14 @@ export default function DecryptedText({
       <span aria-hidden="true">
         {displayText.split('').map((char, index) => {
           const isRevealedOrDone = revealedIndices.has(index) || !isScrambling || !isHovering;
+          const customStyle = charStyle ? charStyle(text[index], index) : null;
 
           return (
-            <span key={index} className={isRevealedOrDone ? className : encryptedClassName}>
+            <span
+              key={index}
+              className={isRevealedOrDone ? className : encryptedClassName}
+              style={customStyle}
+            >
               {char}
             </span>
           );

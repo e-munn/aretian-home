@@ -49,27 +49,27 @@ const ANALYTICS_ITEMS = [
 
 function AnalyticsList() {
   return (
-    <div className="h-full relative z-20 flex flex-col justify-center gap-3">
+    <div className="h-full relative z-20 flex flex-col justify-start gap-3">
       {ANALYTICS_ITEMS.map((item, i) => (
         <div
           key={item.area}
           className="group flex items-start gap-3 py-2 px-3 rounded-lg transition-all hover:bg-black/5"
         >
           <span
-            className="text-lg font-medium opacity-30 mt-0.5"
+            className="text-xl font-medium opacity-30 mt-0.5"
             style={{ color: item.color, fontFamily: 'var(--font-bebas-neue)' }}
           >
             0{i + 1}
           </span>
           <div className="flex-1">
             <div
-              className="uppercase tracking-wider text-sm font-semibold mb-0.5"
+              className="uppercase tracking-wider text-base font-semibold mb-0.5"
               style={{ color: item.color }}
             >
               {item.label}
             </div>
             <div
-              className="text-xs leading-relaxed opacity-70"
+              className="text-sm leading-relaxed opacity-70"
               style={{ color: item.color }}
             >
               {item.description}
@@ -99,33 +99,86 @@ const SOFTWARE_ITEMS = [
 
 function SoftwareList() {
   return (
-    <div className="h-full relative z-20 flex flex-col justify-center gap-3">
+    <div className="h-full relative z-20 flex flex-col justify-start gap-3">
       {SOFTWARE_ITEMS.map((item, i) => (
         <div
           key={item.area}
           className="group flex items-start gap-3 py-2 px-3 rounded-lg transition-all hover:bg-black/5"
         >
           <span
-            className="text-lg font-medium opacity-30 mt-0.5"
+            className="text-xl font-medium opacity-30 mt-0.5"
             style={{ color: item.color, fontFamily: 'var(--font-bebas-neue)' }}
           >
             0{i + 1}
           </span>
           <div className="flex-1">
             <div
-              className="uppercase tracking-wider text-sm font-semibold mb-0.5"
+              className="uppercase tracking-wider text-base font-semibold mb-0.5"
               style={{ color: item.color }}
             >
               {item.label}
             </div>
             <div
-              className="text-xs leading-relaxed opacity-70"
+              className="text-sm leading-relaxed opacity-70"
               style={{ color: item.color }}
             >
               {item.description}
             </div>
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+// Research publications
+const RESEARCH_PUBLICATIONS = [
+  {
+    label: 'City Science Book',
+    description: 'Performance Follows Form — A study of 100 cities across 5 continents.',
+    color: '#92400e',  // amber-800
+    url: 'https://actar.com/product/city-science/',
+  },
+  {
+    label: 'Barcelona Report',
+    description: 'A Vision for Barcelona\'s Future — Strategic growth framework.',
+    color: '#b45309',  // amber-700
+    url: '#',
+  },
+];
+
+function ResearchList() {
+  return (
+    <div className="h-full relative z-20 flex flex-col justify-start gap-3">
+      {RESEARCH_PUBLICATIONS.map((item, i) => (
+        <a
+          key={item.label}
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-start gap-3 py-2 px-3 rounded-lg transition-all hover:bg-black/5"
+        >
+          <span
+            className="text-xl font-medium opacity-30 mt-0.5"
+            style={{ color: item.color, fontFamily: 'var(--font-bebas-neue)' }}
+          >
+            0{i + 1}
+          </span>
+          <div className="flex-1">
+            <div
+              className="uppercase tracking-wider text-base font-semibold mb-0.5"
+              style={{ color: item.color }}
+            >
+              {item.label}
+            </div>
+            <div
+              className="text-sm leading-relaxed opacity-70"
+              style={{ color: item.color }}
+            >
+              {item.description}
+            </div>
+          </div>
+        </a>
       ))}
     </div>
   );
@@ -148,6 +201,7 @@ const SERVICES: CardData[] = [
     title: 'Research',
     description: 'Collaborating with academic and research partners, our Harvard-based group drives groundbreaking research in Innovation, Networks, and Urbanism.',
     label: 'Research',
+    customContent: <ResearchList />,
   },
   {
     color: '#ec4899',  // pink-500

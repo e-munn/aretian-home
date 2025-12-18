@@ -320,10 +320,10 @@ export function ProjectsSection() {
       </Visible>
 
       {/* Awards banner - outside Visible for full width */}
-      <div className="absolute bottom-0 left-0 right-0 h-56 flex flex-col justify-center w-full bg-[#0f0f1a]/80 backdrop-blur-md border-t border-white/5 z-10 overflow-hidden">
-        <p className="text-white/50 text-sm md:text-base py-2 uppercase tracking-widest px-8 text-right flex items-center justify-end gap-2">
-          <span className="text-xl md:text-2xl leading-none">:</span>
-          <span>Awards & Recognitions</span>
+      <div className="absolute bottom-0 left-0 right-0 h-56 flex flex-col justify-center w-full bg-[#0f0f1a]/80 backdrop-blur-md z-10 overflow-hidden">
+        <p className="text-white/80 text-sm md:text-base pb-4 uppercase tracking-widest px-8 text-right flex items-center justify-end gap-2">
+          <span className="text-base md:text-lg leading-none relative -top-1">:</span>
+          <span className="border-b-2 border-white/20 pb-1">Awards & Recognitions</span>
         </p>
         <AwardsBadgeMarquee />
         {/* Gradient overlay - fades from solid on left to transparent on right */}

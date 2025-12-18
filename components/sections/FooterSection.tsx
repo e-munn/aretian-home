@@ -1,30 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import Globe from 'react-globe.gl';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { ChevronUp } from 'lucide-react';
 import { useSectionContext } from '@/components/navigation/FullPageScroll';
-
-// Dynamically import TransitMap - commented out for now
-// const TransitMap = dynamic(() => import('@/components/TransitMap'), {
-//   ssr: false,
-//   loading: () => (
-//     <div className="w-full h-full flex items-center justify-center text-white/40">
-//       <div className="flex items-center gap-2">
-//         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-//         <span className="text-sm">Loading...</span>
-//       </div>
-//     </div>
-//   ),
-// });
-
-// Dynamically import Globe
-const Globe = dynamic(() => import('react-globe.gl'), {
-  ssr: false,
-  loading: () => null,
-});
 
 // Boston/Cambridge coordinates
 const BOSTON = { lat: 42.3601, lng: -71.0589 };
@@ -68,22 +49,17 @@ function MiniGlobe() {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Set up globe orientation when ready
   useEffect(() => {
     if (globeRef.current && countries.length > 0) {
-      // Center on Boston with a closer altitude
-      globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng, altitude: 1.5 }, 0);
+      // Center on Boston - the lat/lng puts Boston front and center
+      globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng, altitude: 1.8 }, 0);
+
       const controls = globeRef.current.controls();
       controls.autoRotate = false;
       controls.enableZoom = false;
       controls.enableRotate = false;
       controls.enablePan = false;
-
-      // Re-center after a short delay to ensure it takes effect
-      setTimeout(() => {
-        if (globeRef.current) {
-          globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng, altitude: 1.5 }, 500);
-        }
-      }, 100);
     }
   }, [countries]);
 
@@ -122,6 +98,7 @@ function MiniGlobe() {
         ringPropagationSpeed="propagationSpeed"
         ringRepeatPeriod="repeatPeriod"
         ringColor={(d: any) => `${d.color}60`}
+        enablePointerInteraction={false}
       />
     </div>
   );
