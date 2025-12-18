@@ -49,8 +49,8 @@ const BOOKS = [
     coverUrl: '/assets/research/barcelona-report.jpg',
     tag: 'Strategic Report',
     tagIcon: FileText,
-    title: "Barcelona's Future",
-    subtitle: 'A Vision for Growth',
+    title: "A Vision for Barcelona's Future",
+    subtitle: 'City science illuminating urban and economic development',
     description: 'Strategic framework for sustainable growth developed with Torras Family Foundation and IESE Business School.',
     highlights: [
       { icon: Briefcase, stat: '75K', label: 'Jobs' },

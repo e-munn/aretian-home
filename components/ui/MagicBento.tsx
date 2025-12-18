@@ -355,10 +355,9 @@ const BentoCardGrid = ({ children, gridRef }: { children: ReactNode; gridRef: Re
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gridTemplateRows: 'repeat(3, 1fr)',
+        gridTemplateRows: 'repeat(2, 1fr)',
         gap: 'clamp(8px, 1.5vh, 16px)',
         gridTemplateAreas: `
-          "a a b b"
           "a a b b"
           "a a c c"
         `
@@ -426,7 +425,7 @@ function BentoCardWithCorners({
   hideTitle: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const gridAreas = ['a', 'b', 'c'];
+  const gridAreas = ['a', 'c', 'b'];
   const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''} ${!darkMode ? 'magic-bento-card--light' : ''}`;
   const cardStyle = {
     '--glow-color': glowColor,

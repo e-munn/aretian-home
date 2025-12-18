@@ -149,7 +149,7 @@ function TeamCardsGrid({ members }: { members: TeamMember[] }) {
         style={{ overscrollBehavior: 'contain' }}
         data-scrollable
       >
-        <div className="flex flex-wrap justify-center gap-6 pb-8">
+        <div className="grid grid-cols-3 gap-5 pb-8 max-w-5xl mx-auto">
           {members.map((member, i) => (
             <TeamMemberCard
               key={member.name}
