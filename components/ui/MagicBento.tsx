@@ -426,7 +426,7 @@ function BentoCardWithCorners({
   hideTitle: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const gridAreas = ['a', 'c', 'b'];
+  const gridAreas = ['a', 'b', 'c'];
   const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''} ${!darkMode ? 'magic-bento-card--light' : ''}`;
   const cardStyle = {
     '--glow-color': glowColor,
@@ -452,15 +452,19 @@ function BentoCardWithCorners({
         <div className="magic-bento-card__label" style={card.titleColor ? { color: card.titleColor } : undefined}>{card.label}</div>
         {card.icon && <div className="magic-bento-card__icon">{card.icon}</div>}
       </div>
+      {card.description && (
+        <p className="magic-bento-card__description" style={{ marginTop: 'clamp(4px, 0.8vh, 8px)', ...(card.titleColor ? { color: card.titleColor, opacity: 0.7 } : {}) }}>{card.description}</p>
+      )}
       {card.customContent && (
         <div className="magic-bento-card__custom flex-1" style={{ marginTop: 'clamp(8px, 1.5vh, 16px)', marginBottom: 'clamp(8px, 1.5vh, 16px)' }}>
           {card.customContent}
         </div>
       )}
-      <div className="magic-bento-card__content">
-        {!hideTitle && <h2 className="magic-bento-card__title" style={card.titleColor ? { color: card.titleColor } : undefined}>{card.title}</h2>}
-        <p className="magic-bento-card__description" style={card.titleColor ? { color: card.titleColor, opacity: 0.7 } : undefined}>{card.description}</p>
-      </div>
+      {!hideTitle && (
+        <div className="magic-bento-card__content">
+          <h2 className="magic-bento-card__title" style={card.titleColor ? { color: card.titleColor } : undefined}>{card.title}</h2>
+        </div>
+      )}
     </ParticleCard>
   );
 }

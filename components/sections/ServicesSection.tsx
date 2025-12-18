@@ -199,7 +199,7 @@ const SERVICES: CardData[] = [
     bgColor: 'rgba(245, 158, 11, 0.15)',
     titleColor: '#92400e',  // amber-800
     title: 'Research',
-    description: 'Collaborating with academic and research partners, our Harvard-based group drives groundbreaking research in Innovation, Networks, and Urbanism.',
+    description: 'Pioneering studies on urban form and performance across global cities.',
     label: 'Research',
     customContent: <ResearchList />,
   },

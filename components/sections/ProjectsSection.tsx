@@ -145,7 +145,7 @@ const PROJECTS = [
 // Grid View
 function GridView({ projects }: { projects: typeof PROJECTS }) {
   return (
-    <div className="h-full p-6 md:p-8">
+    <div className="h-full pt-12 px-6 pb-6 md:pt-12 md:px-8 md:pb-8">
       <div
         className="h-full grid gap-3"
         style={{
@@ -289,22 +289,22 @@ export function ProjectsSection() {
       }}
     >
       {/* View toggle */}
-      <div className="absolute top-6 right-6 z-10 flex gap-1 p-1.5 rounded-xl bg-black/40 border border-white/20 backdrop-blur-sm">
+      <div className="absolute top-4 right-4 z-10 flex gap-1 p-1 rounded-lg bg-black/40 border border-white/20 backdrop-blur-sm">
         <button
           onClick={() => setView('globe')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${view === 'globe' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${view === 'globe' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
           title="Globe view"
         >
-          <Globe size={18} />
-          <span className="text-xs font-medium uppercase tracking-wide">Globe</span>
+          <Globe size={14} />
+          <span className="text-[10px] font-medium uppercase tracking-wide">Globe</span>
         </button>
         <button
           onClick={() => setView('grid')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${view === 'grid' ? 'bg-white/15 text-white shadow-lg' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}`}
           title="Grid view"
         >
-          <Grid3X3 size={18} />
-          <span className="text-xs font-medium uppercase tracking-wide">Grid</span>
+          <Grid3X3 size={14} />
+          <span className="text-[10px] font-medium uppercase tracking-wide">Grid</span>
         </button>
       </div>
 

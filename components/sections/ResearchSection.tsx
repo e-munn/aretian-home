@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { BookOpen, Globe2, Building2, Route, Play, ExternalLink, ShoppingCart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BookOpen, Globe2, Building2, Route, Play, ExternalLink, ShoppingCart, Download, Briefcase, Lightbulb, LineChart, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Visible } from '@/components/layout/Visible';
 
 // Video links
@@ -24,29 +25,55 @@ const VIDEOS = [
   },
 ];
 
-// Book cover image
-const BOOK_COVER_URL = '/assets/research/city-science-book.jpg';
+// Books data
+const BOOKS = [
+  {
+    id: 'city-science',
+    coverUrl: '/assets/research/city-science-book.jpg',
+    tag: '2024 Publication',
+    tagIcon: BookOpen,
+    title: 'City Science',
+    subtitle: 'Performance Follows Form',
+    description: 'A study of 100 urban environments across five continents examining urban design and quality of life.',
+    highlights: [
+      { icon: Globe2, stat: '100', label: 'Cities' },
+      { icon: Building2, stat: '5', label: 'Continents' },
+      { icon: Route, stat: '15min', label: 'Standards' },
+    ],
+    ctaLabel: 'Buy on Actar',
+    ctaIcon: ShoppingCart,
+    ctaUrl: 'https://actar.com/product/city-science/',
+  },
+  {
+    id: 'barcelona-report',
+    coverUrl: '/assets/research/barcelona-report.jpg',
+    tag: 'Strategic Report',
+    tagIcon: FileText,
+    title: "Barcelona's Future",
+    subtitle: 'A Vision for Growth',
+    description: 'Strategic framework for sustainable growth developed with Torras Family Foundation and IESE Business School.',
+    highlights: [
+      { icon: Briefcase, stat: '75K', label: 'Jobs' },
+      { icon: LineChart, stat: '€65B', label: 'Revenue' },
+      { icon: Lightbulb, stat: '350', label: 'Industries' },
+    ],
+    ctaLabel: 'Download Report',
+    ctaIcon: Download,
+    ctaUrl: '#',
+  },
+];
 
-// Book data
-const BOOK = {
-  tag: '2024 Publication',
-  title: 'City Science',
-  subtitle: 'Performance Follows Form',
-  description: 'A study of 100 urban environments across five continents examining urban design and quality of life.',
-  highlights: [
-    { icon: Globe2, stat: '100', label: 'Cities' },
-    { icon: Building2, stat: '5', label: 'Continents' },
-    { icon: Route, stat: '15min', label: 'Standards' },
-  ],
-  ctaUrl: 'https://actar.com/product/city-science/',
-};
+function BookDisplay({ book }: { book: typeof BOOKS[0] }) {
+  const TagIcon = book.tagIcon;
+  const CtaIcon = book.ctaIcon;
 
-function BookDisplay() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      key={book.id}
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      transition={{ duration: 0.3 }}
       className="flex items-center gap-12"
     >
       {/* Book Cover */}
@@ -60,8 +87,8 @@ function BookDisplay() {
           style={{ boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.6)' }}
         >
           <Image
-            src={BOOK_COVER_URL}
-            alt={BOOK.title}
+            src={book.coverUrl}
+            alt={book.title}
             fill
             className="object-cover"
           />
@@ -72,9 +99,9 @@ function BookDisplay() {
       <div className="flex flex-col">
         {/* Tag */}
         <div className="flex items-center gap-2 mb-3">
-          <BookOpen size={16} className="text-[#00C217]" />
+          <TagIcon size={16} className="text-[#00C217]" />
           <span className="text-[#00C217] text-xs uppercase tracking-[0.2em] font-medium">
-            {BOOK.tag}
+            {book.tag}
           </span>
         </div>
 
@@ -83,18 +110,18 @@ function BookDisplay() {
           className="text-white text-5xl uppercase tracking-wide mb-1"
           style={{ fontFamily: 'var(--font-bebas-neue)' }}
         >
-          {BOOK.title}
+          {book.title}
         </h2>
-        <p className="text-white/50 text-lg mb-3">{BOOK.subtitle}</p>
+        <p className="text-white/50 text-lg mb-3">{book.subtitle}</p>
 
         {/* Description */}
         <p className="text-white/40 text-sm leading-relaxed mb-6 max-w-md">
-          {BOOK.description}
+          {book.description}
         </p>
 
         {/* Stats */}
         <div className="flex gap-8 mb-6">
-          {BOOK.highlights.map((highlight) => (
+          {book.highlights.map((highlight) => (
             <div key={highlight.label} className="text-center">
               <p
                 className="text-white text-2xl"
@@ -111,17 +138,64 @@ function BookDisplay() {
 
         {/* CTA */}
         <a
-          href={BOOK.ctaUrl}
+          href={book.ctaUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-[#00C217]/30 bg-[#00C217]/10 hover:bg-[#00C217]/20 hover:border-[#00C217]/50 transition-all group w-fit"
         >
-          <ShoppingCart size={18} className="text-[#00C217]" />
-          <span className="text-[#00C217] text-base font-medium">Buy on Actar</span>
+          <CtaIcon size={18} className="text-[#00C217]" />
+          <span className="text-[#00C217] text-base font-medium">{book.ctaLabel}</span>
           <ExternalLink size={14} className="text-[#00C217]/60 group-hover:text-[#00C217] transition-colors" />
         </a>
       </div>
     </motion.div>
+  );
+}
+
+function BookCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goNext = () => setCurrentIndex((prev) => (prev + 1) % BOOKS.length);
+  const goPrev = () => setCurrentIndex((prev) => (prev - 1 + BOOKS.length) % BOOKS.length);
+
+  return (
+    <div className="relative flex items-center gap-8">
+      {/* Left Arrow */}
+      <button
+        onClick={goPrev}
+        className="p-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all"
+      >
+        <ChevronLeft size={24} className="text-white/60" />
+      </button>
+
+      {/* Book Display */}
+      <div className="relative overflow-hidden">
+        <AnimatePresence mode="wait">
+          <BookDisplay book={BOOKS[currentIndex]} />
+        </AnimatePresence>
+      </div>
+
+      {/* Right Arrow */}
+      <button
+        onClick={goNext}
+        className="p-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all"
+      >
+        <ChevronRight size={24} className="text-white/60" />
+      </button>
+
+      {/* Dots indicator */}
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+        {BOOKS.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentIndex ? 'bg-[#00C217] w-4' : 'bg-white/30 hover:bg-white/50'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -169,8 +243,8 @@ export function ResearchSection() {
   return (
     <div className="w-full h-full bg-transparent relative overflow-hidden">
       <Visible>
-        <div className="w-full h-full flex flex-col items-center justify-center gap-10">
-          <BookDisplay />
+        <div className="w-full h-full flex flex-col items-center justify-center gap-28">
+          <BookCarousel />
           <VideoLinks />
         </div>
       </Visible>

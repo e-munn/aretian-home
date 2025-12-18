@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import Globe from 'react-globe.gl';
+import dynamic from 'next/dynamic';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { ChevronUp } from 'lucide-react';
 import { useSectionContext } from '@/components/navigation/FullPageScroll';
+
+// Dynamic import to avoid SSR issues with react-globe.gl
+const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
 // Boston/Cambridge coordinates
 const BOSTON = { lat: 42.3601, lng: -71.0589 };
