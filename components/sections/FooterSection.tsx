@@ -60,7 +60,8 @@ function MiniGlobe() {
       globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng - orbitOffset, altitude: 1.8 }, 0);
 
       const controls = globeRef.current.controls();
-      controls.autoRotate = false;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.4; // Slow gentle rotation
       controls.enableZoom = false;
       controls.enableRotate = false;
       controls.enablePan = false;
