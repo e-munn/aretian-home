@@ -55,8 +55,9 @@ function MiniGlobe() {
   // Set up globe orientation when ready
   useEffect(() => {
     if (globeRef.current && countries.length > 0) {
-      // Center on Boston - the lat/lng puts Boston front and center
-      globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng, altitude: 1.8 }, 0);
+      // Orbit 40 degrees from Boston to show globe from different angle
+      const orbitOffset = 40;
+      globeRef.current.pointOfView({ lat: BOSTON.lat, lng: BOSTON.lng - orbitOffset, altitude: 1.8 }, 0);
 
       const controls = globeRef.current.controls();
       controls.autoRotate = false;

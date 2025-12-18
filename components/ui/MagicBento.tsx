@@ -348,11 +348,15 @@ const GlobalSpotlight = ({ gridRef, disableAnimations = false, enabled = true, s
   return null;
 };
 
-const BentoCardGrid = ({ children, gridRef }: { children: ReactNode; gridRef: React.RefObject<HTMLDivElement> }) => (
-  <div className="bento-section w-full h-full flex items-start justify-center p-4 pt-2 md:p-6 md:pt-3" ref={gridRef}>
+const BentoCardGrid = ({ children, gridRef, isMobile }: { children: ReactNode; gridRef: React.RefObject<HTMLDivElement>; isMobile: boolean }) => (
+  <div className="bento-section w-full h-full flex items-start justify-center p-4 pt-2 md:p-6 md:pt-3 overflow-y-auto" ref={gridRef} data-scrollable>
     <div
       className="w-full h-full"
-      style={{
+      style={isMobile ? {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'clamp(8px, 1.5vh, 16px)',
+      } : {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
         gridTemplateRows: 'repeat(2, 1fr)',
@@ -410,6 +414,7 @@ function BentoCardWithCorners({
   clickEffect,
   enableMagnetism,
   hideTitle,
+  isMobile,
 }: {
   card: CardData;
   index: number;
@@ -423,13 +428,14 @@ function BentoCardWithCorners({
   clickEffect: boolean;
   enableMagnetism: boolean;
   hideTitle: boolean;
+  isMobile: boolean;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const gridAreas = ['a', 'c', 'b'];
   const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''} ${!darkMode ? 'magic-bento-card--light' : ''}`;
   const cardStyle = {
     '--glow-color': glowColor,
-    gridArea: gridAreas[index] || 'auto',
+    ...(isMobile ? { minHeight: '200px' } : { gridArea: gridAreas[index] || 'auto' }),
     backgroundColor: card.bgColor || 'transparent',
   } as React.CSSProperties;
 
@@ -543,7 +549,7 @@ const MagicBento = ({
 
       {enableSpotlight && <GlobalSpotlight gridRef={gridRef} disableAnimations={shouldDisableAnimations} enabled={enableSpotlight} spotlightRadius={spotlightRadius} glowColor={glowColor} />}
 
-      <BentoCardGrid gridRef={gridRef}>
+      <BentoCardGrid gridRef={gridRef} isMobile={isMobile}>
         {cards.map((card, index) => (
           <BentoCardWithCorners
             key={index}
@@ -559,6 +565,7 @@ const MagicBento = ({
             clickEffect={clickEffect}
             enableMagnetism={enableMagnetism}
             hideTitle={hideTitle}
+            isMobile={isMobile}
           />
         ))}
       </BentoCardGrid>

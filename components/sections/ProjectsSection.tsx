@@ -145,14 +145,8 @@ const PROJECTS = [
 // Grid View
 function GridView({ projects }: { projects: typeof PROJECTS }) {
   return (
-    <div className="h-full pt-12 px-6 pb-6 md:pt-12 md:px-8 md:pb-8">
-      <div
-        className="h-full grid gap-3"
-        style={{
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gridTemplateRows: 'repeat(3, 1fr)',
-        }}
-      >
+    <div className="h-full pt-12 px-4 pb-6 md:pt-12 md:px-8 md:pb-8 overflow-y-auto" data-scrollable>
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr">
         {projects.map((project, i) => (
           <motion.button
             key={project.name}

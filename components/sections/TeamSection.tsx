@@ -145,11 +145,11 @@ function TeamCardsGrid({ members }: { members: TeamMember[] }) {
   return (
     <div className="relative h-full overflow-hidden">
       <div
-        className="h-full px-8 pt-10 pb-8 overflow-y-auto scrollbar-hide"
+        className="h-full px-4 md:px-8 pt-10 pb-8 overflow-y-auto scrollbar-hide"
         style={{ overscrollBehavior: 'contain' }}
         data-scrollable
       >
-        <div className="grid grid-cols-3 gap-5 pb-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8 max-w-4xl mx-auto">
           {members.map((member, i) => (
             <TeamMemberCard
               key={member.name}

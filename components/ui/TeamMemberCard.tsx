@@ -27,13 +27,14 @@ export function TeamMemberCard({ member, index, accentColor = '#00C217' }: TeamM
       transition={{ duration: 0.5, delay: index * 0.08 }}
       className="group relative flex flex-col bg-[#12121a] rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:shadow-2xl w-full"
     >
-      {/* Photo Section - takes up ~50% */}
+      {/* Photo Section - zoomed out to show more of the person */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-white/5 to-transparent">
         {member.image ? (
           <img
             src={member.image}
             alt={member.name}
             className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            style={{ transform: 'scale(0.85)', transformOrigin: 'center 30%' }}
           />
         ) : (
           <div

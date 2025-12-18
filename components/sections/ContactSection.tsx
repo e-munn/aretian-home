@@ -151,7 +151,7 @@ export function ContactSection() {
           className="text-4xl md:text-5xl text-white mb-6 uppercase tracking-wide"
           style={{ fontFamily: 'var(--font-bebas-neue)' }}
         >
-          Let's talk
+          Say Hello
         </h2>
 
         <Stepper
@@ -222,7 +222,6 @@ export function ContactSection() {
           {/* Step 1: Email */}
           <Step>
             <div className="space-y-4">
-              <p className="text-white/40 mb-4">Start with your email</p>
               <input
                 {...emailForm.register('email')}
                 type="email"
@@ -241,10 +240,9 @@ export function ContactSection() {
           {/* Step 2: Message */}
           <Step>
             <div className="space-y-4">
-              <p className="text-white/40 mb-4">Tell us about your project</p>
               <textarea
                 {...messageForm.register('message')}
-                placeholder="Describe what you're working on..."
+                placeholder="How can we help?"
                 rows={4}
                 autoFocus
                 className={`${inputClasses} resize-none`}

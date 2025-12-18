@@ -74,7 +74,7 @@ function BookDisplay({ book }: { book: typeof BOOKS[0] }) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -50 }}
       transition={{ duration: 0.3 }}
-      className="flex items-center gap-12"
+      className="flex flex-col md:flex-row items-center gap-6 md:gap-12 px-4 md:px-0"
     >
       {/* Book Cover */}
       <div className="relative">
@@ -96,7 +96,7 @@ function BookDisplay({ book }: { book: typeof BOOKS[0] }) {
       </div>
 
       {/* Book Info */}
-      <div className="flex flex-col">
+      <div className="flex flex-col items-center md:items-start text-center md:text-left">
         {/* Tag */}
         <div className="flex items-center gap-2 mb-3">
           <TagIcon size={16} className="text-[#00C217]" />
@@ -107,12 +107,12 @@ function BookDisplay({ book }: { book: typeof BOOKS[0] }) {
 
         {/* Title */}
         <h2
-          className="text-white text-5xl uppercase tracking-wide mb-1"
+          className="text-white text-3xl md:text-5xl uppercase tracking-wide mb-1"
           style={{ fontFamily: 'var(--font-bebas-neue)' }}
         >
           {book.title}
         </h2>
-        <p className="text-white/50 text-lg mb-3">{book.subtitle}</p>
+        <p className="text-white/50 text-base md:text-lg mb-3">{book.subtitle}</p>
 
         {/* Description */}
         <p className="text-white/40 text-sm leading-relaxed mb-6 max-w-md">
@@ -120,11 +120,11 @@ function BookDisplay({ book }: { book: typeof BOOKS[0] }) {
         </p>
 
         {/* Stats */}
-        <div className="flex gap-8 mb-6">
+        <div className="flex gap-6 md:gap-8 mb-6">
           {book.highlights.map((highlight) => (
             <div key={highlight.label} className="text-center">
               <p
-                className="text-white text-2xl"
+                className="text-white text-xl md:text-2xl"
                 style={{ fontFamily: 'var(--font-bebas-neue)' }}
               >
                 {highlight.stat}
@@ -201,7 +201,7 @@ function BookCarousel() {
 
 function VideoLinks() {
   return (
-    <div className="flex items-center justify-center gap-4 px-8">
+    <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4 px-4 md:px-8">
       {VIDEOS.map((video, i) => (
         <motion.a
           key={video.id}
@@ -243,7 +243,7 @@ export function ResearchSection() {
   return (
     <div className="w-full h-full bg-transparent relative overflow-hidden">
       <Visible>
-        <div className="w-full h-full flex flex-col items-center justify-center gap-28">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-12 md:gap-28 py-8 md:py-0">
           <BookCarousel />
           <VideoLinks />
         </div>

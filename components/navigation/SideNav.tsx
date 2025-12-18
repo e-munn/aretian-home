@@ -30,11 +30,12 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
   return (
     <div className="fixed left-0 top-0 bottom-0 z-[100] w-screen h-screen flex flex-col pointer-events-none">
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col pt-10 pb-8 px-8">
+      <nav className="flex-1 flex flex-col pt-6 pb-6 px-4 md:pt-10 md:pb-8 md:px-8">
         <ul className="flex flex-col justify-between h-full list-none m-0 p-0">
           {sections.map((section, index) => {
             const isFirst = index === 0;
-            const fontSize = isFirst ? 'clamp(4.5rem, 7vw, 9rem)' : 'clamp(3.5rem, 5.5vw, 7rem)';
+            // Mobile-first font sizes with smaller minimums
+            const fontSize = isFirst ? 'clamp(2.5rem, 7vw, 9rem)' : 'clamp(2rem, 5.5vw, 7rem)';
             const fontFamily = isFirst ? LOGO_FONT : NAV_FONT;
             const fontWeight = isFirst ? 800 : 600;
             const letterSpacing = isFirst ? '0.15em' : '0.05em';
@@ -114,7 +115,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                           <DecryptedText
                             text="URBAN ANALYTICS & DESIGN"
                             animateOn="view"
-                            characters=";:."
+                            characters=".:_"
                             speed={60}
                             sequential={true}
                             revealDirection="start"
@@ -137,7 +138,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                             <DecryptedText
                               text="URBAN ANALYTICS"
                               animateOn="view"
-                              characters=";:."
+                              characters=".:_"
                               speed={80}
                               sequential={true}
                               revealDirection="start"
@@ -146,7 +147,7 @@ export function SideNav({ sections, activeIndex, onNavigate, colorMode = 'dark' 
                           <DecryptedText
                             text="& DESIGN"
                             animateOn="view"
-                            characters=";:."
+                            characters=".:_"
                             speed={80}
                             sequential={true}
                             revealDirection="start"

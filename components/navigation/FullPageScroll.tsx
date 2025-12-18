@@ -8,15 +8,37 @@ import { SectionBreak } from '@/components/layout/SectionBreak';
 import { usePaletteStore } from '@/stores/paletteStore';
 import { useCursorContext } from '@/components/cursor/CursorProvider';
 
+// Mobile detection hook
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      // Check for touch device or narrow viewport
+      const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+      const isNarrowViewport = window.innerWidth < 768;
+      setIsMobile(isTouchDevice || isNarrowViewport);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 // Context to share active section info with children
 type ColorMode = 'dark' | 'light';
 const SectionContext = createContext<{
   activeIndex: number;
   colorMode: ColorMode;
+  isMobile: boolean;
   navigateToSection: (index: number) => void;
 }>({
   activeIndex: 0,
   colorMode: 'dark',
+  isMobile: false,
   navigateToSection: () => {},
 });
 export const useSectionContext = () => useContext(SectionContext);
@@ -103,6 +125,7 @@ const BREAK_HEIGHT = 0;
 
 export function FullPageScroll({ sections, children, showBreaks = false, breakHeight = BREAK_HEIGHT, renderWindow = 1, extraSection }: FullPageScrollProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const isMobile = useIsMobile();
   // Total sections includes the extra section if present
   const totalSections = sections.length + (extraSection ? 1 : 0);
   const [scrollProgress, setScrollProgress] = useState<number[]>(Array(totalSections).fill(0));
@@ -201,6 +224,18 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     // Calculate target position including break heights
     const breaksBeforeTarget = showBreaks ? index * breakHeight : 0;
     const targetY = index * window.innerHeight + breaksBeforeTarget;
+
+    // On mobile, use native smooth scroll
+    if (isMobile) {
+      container.scrollTo({ top: targetY, behavior: 'smooth' });
+      // Reset animation flag after a short delay
+      setTimeout(() => {
+        isAnimating.current = false;
+      }, 500);
+      return;
+    }
+
+    // Desktop: custom cinematic scroll animation
     const startY = container.scrollTop;
     const distance = targetY - startY;
     const duration = 2200; // ms - slow cinematic scroll
@@ -231,7 +266,7 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     };
 
     requestAnimationFrame(animate);
-  }, [sections, totalSections]);
+  }, [sections, totalSections, isMobile, showBreaks, breakHeight]);
 
   // Handle initial hash and popstate (back/forward buttons)
   useEffect(() => {
@@ -263,15 +298,15 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
     return () => window.removeEventListener('popstate', handlePopState);
   }, [sections, scrollToSection, showBreaks, breakHeight]);
 
-  // Handle wheel events for controlled scrolling
+  // Handle wheel events for controlled scrolling (desktop only)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || isMobile) return; // Skip on mobile - use native scroll
 
     // Track boundary scroll accumulator for scrollable children
     let boundaryAccumulator = 0;
     let lastBoundaryTime = 0;
-    const boundaryThreshold = 500; // Extra scroll needed at boundary before section change (high to prevent accidents)
+    const boundaryThreshold = 1000; // Extra scroll needed at boundary before section change (very high to prevent accidents)
 
     const handleWheel = (e: WheelEvent) => {
       // Check if event originated from a scrollable child
@@ -291,7 +326,7 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
 
         // At boundary - accumulate scroll before allowing section change
         const now = Date.now();
-        if (now - lastBoundaryTime > 300) {
+        if (now - lastBoundaryTime > 500) {
           boundaryAccumulator = 0; // Reset if paused
         }
         lastBoundaryTime = now;
@@ -332,7 +367,37 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [activeIndex, scrollToSection]);
+  }, [activeIndex, scrollToSection, isMobile]);
+
+  // Handle scroll tracking on mobile (native scroll)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !isMobile) return;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const viewportHeight = window.innerHeight;
+
+      // Calculate which section is most visible
+      const currentSection = Math.round(scrollTop / viewportHeight);
+      const clampedSection = Math.max(0, Math.min(currentSection, totalSections - 1));
+
+      if (clampedSection !== activeIndex) {
+        setActiveIndex(clampedSection);
+
+        // Update URL hash
+        if (clampedSection < sections.length) {
+          const sectionId = sections[clampedSection]?.id;
+          if (sectionId) {
+            window.history.replaceState(null, '', `#${sectionId}`);
+          }
+        }
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [activeIndex, totalSections, sections, isMobile]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -393,7 +458,7 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
   }, [colorMode, setDarkMode]);
 
   return (
-    <SectionContext.Provider value={{ activeIndex, colorMode, navigateToSection: scrollToSection }}>
+    <SectionContext.Provider value={{ activeIndex, colorMode, isMobile, navigateToSection: scrollToSection }}>
       <GlobalBackground sectionId={currentSectionId} />
 
       {/* Hide nav elements when on extra section */}
@@ -423,8 +488,8 @@ export function FullPageScroll({ sections, children, showBreaks = false, breakHe
 
       <div
         ref={containerRef}
-        className="h-screen overflow-hidden relative z-10"
-        style={{ overscrollBehavior: 'none' }}
+        className={`h-screen relative z-10 ${isMobile ? 'overflow-y-auto overflow-x-hidden' : 'overflow-hidden'}`}
+        style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}
       >
         <div style={{ height: `calc(${totalSections * 100}vh + ${totalBreakHeight}px)` }}>
           {children.map((child, index) => {
